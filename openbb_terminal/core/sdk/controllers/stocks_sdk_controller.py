@@ -27,6 +27,7 @@ class StocksController(model.StocksRoot):
         `news`: Get news for a given term and source. [Source: Ultima Insights News Monitor]\n
         `process_candle`: Process DataFrame into candle style plot.\n
         `quote`: Gets ticker quote from FMP\n
+        `quote_chart`: Financial Modeling Prep ticker(s) quote.\n
         `search`: Search selected query for tickers.\n
         `tob`: Get top of book bid and ask for ticker on exchange [CBOE.com]\n
     """
@@ -41,22 +42,19 @@ class StocksController(model.StocksRoot):
             `getdd`: Get due diligence posts from list of subreddits [Source: reddit].\n
             `headlines`: Gets Sentiment analysis provided by FinBrain's API [Source: finbrain].\n
             `headlines_chart`: Plots Sentiment analysis from FinBrain. Prints table if raw is True. [Source: FinBrain]\n
-            `infer`: Load tweets from twitter API and analyzes using VADER.\n
-            `infer_chart`: Prints Inference sentiment from past n tweets.\n
             `mentions`: Get interest over time from google api [Source: google].\n
             `mentions_chart`: Plots weekly bars of stock's interest over time. other users watchlist. [Source: Google].\n
             `messages`: Get last messages for a given ticker [Source: stocktwits].\n
+            `ns`: Getting Onclusive Data. [Source: Invisage Platform]\n
+            `ns_chart`: Display Onclusive Data. [Source: Invisage Plotform]\n
             `popular`: Get popular tickers from list of subreddits [Source: reddit].\n
             `queries`: Get related queries from google api [Source: google].\n
             `redditsent`: Find posts related to a specific search term in Reddit.\n
             `regions`: Get interest by region from google api [Source: google].\n
             `regions_chart`: Plots bars of regions based on stock's interest. [Source: Google].\n
             `rise`: Get top rising related queries with this stock's query [Source: google].\n
-            `sentiment`: Get sentiments from symbol.\n
-            `sentiment_chart`: Plots sentiments from symbol\n
             `snews`: Get headlines sentiment using VADER model over time. [Source: Finnhub]\n
             `snews_chart`: Display stock price and headlines sentiment using VADER model over time. [Source: Finnhub]\n
-            `spacc`: Get top tickers from r/SPACs [Source: reddit].\n
             `stalker`: Gets messages from given user [Source: stocktwits].\n
             `text_sent`: Find the sentiment of a post and related comments.\n
             `trending`: Get trending tickers from stocktwits [Source: stocktwits].\n
@@ -108,7 +106,6 @@ class StocksController(model.StocksRoot):
             `ipo`: Get IPO calendar\n
             `losers`: Get top losers. [Source: Yahoo Finance]\n
             `lowfloat`: Returns low float DataFrame\n
-            `news`: Gets news. [Source: SeekingAlpha]\n
             `pipo`: Past IPOs dates. [Source: Finnhub]\n
             `rtat`: Gets the top 10 retail stocks per day\n
             `trending`: Returns a list of trending articles\n
@@ -156,7 +153,6 @@ class StocksController(model.StocksRoot):
             `cal`: Get calendar earnings for ticker symbol\n
             `cash`: Get Cash Flow.\n
             `customer`: Print customers from ticker provided\n
-            `data`: Get fundamental data from finviz\n
             `dcf`: Get stocks dcf from FMP\n
             `dcfc`: Get stocks dcf from FMP\n
             `divs`: Get historical dividend for ticker\n
@@ -172,15 +168,13 @@ class StocksController(model.StocksRoot):
             `growth`: Get financial statement growth\n
             `historical_5`: Get 5 year monthly historical performance for a ticker with dividends filtered\n
             `income`: Get income statement.\n
-            `info`: Gets ticker symbol info\n
             `key`: Get key metrics from overview\n
             `metrics`: Get key metrics\n
             `mgmt`: Get company managers from Business Insider\n
             `mktcap`: Get market cap over time for ticker. [Source: Yahoo Finance]\n
             `mktcap_chart`: Display market cap over time. [Source: Yahoo Finance]\n
             `news`: Get news from Finviz\n
-            `overview`: Get alpha vantage company overview\n
-            `profile`: Get ticker profile from FMP\n
+            `overview`: Get overview.\n
             `pt`: Get analysts' price targets for a given stock. [Source: Business Insider]\n
             `pt_chart`: Display analysts' price targets for a given stock. [Source: Business Insider]\n
             `rating`: Get ratings for a given ticker. [Source: Financial Modeling Prep]\n
@@ -189,9 +183,7 @@ class StocksController(model.StocksRoot):
             `rot`: Get rating over time data. [Source: Finnhub]\n
             `rot_chart`: Rating over time (monthly). [Source: Finnhub]\n
             `score`: Gets value score from fmp\n
-            `sec`: Get SEC filings for a given stock ticker. [Source: Market Watch]\n
-            `sec_fmp`: Get SEC Filings RSS feed, disseminated by FMP\n
-            `sec_fmp_chart`: Display recent forms submitted to the SEC\n
+            `sec`: Get SEC filings for a given stock ticker. [Source: Nasdaq]\n
             `shrs`: Get shareholders from yahoo\n
             `similar_dfs`: Get dataframes for similar companies\n
             `splits`: Get splits and reverse splits events. [Source: Yahoo Finance]\n
@@ -261,22 +253,21 @@ class StocksController(model.StocksRoot):
     def options(self):
         """Stocks Options Submodule
 
-        Submodules:
-            `screen`: Screen Module
-
         Attributes:
             `chains`: Get Option Chain For A Stock.  No greek data is returned\n
-            `dte`: Gets days to expiration from yfinance option date\n
+            `dte`: Returns a new column containing the DTE as an integer, including 0.\n
             `eodchain`: Get full EOD option date across all expirations\n
             `expirations`: Get Option Chain Expirations\n
             `generate_data`: Gets x values, and y values before and after premiums\n
+            `get_strategies`: Gets options strategies for all, or a list of, DTE(s).\n
             `greeks`: Gets the greeks for a given option\n
-            `grhist`: Get histoical option greeks\n
-            `grhist_chart`: Plots historical greeks for a given option. [Source: Syncretism]\n
+            `grhist`: Get historical EOD option prices, with Greeks, for a given OCC chain label.\n
+            `grhist_chart`: Plots historical greeks for a given option.\n
             `hist`: Get historical option pricing.\n
             `info`: Scrape barchart for options info\n
             `info_chart`: Scrapes Barchart.com for the options information\n
             `last_price`: Makes api request for last price\n
+            `load_options_chains`: Loads all options chains from a specific source, fields returned to each attribute will vary.\n
             `oi`: Plot open interest\n
             `pcr`: Gets put call ratio over last time window [Source: AlphaQuery.com]\n
             `pcr_chart`: Display put call ratio [Source: AlphaQuery.com]\n
@@ -323,12 +314,8 @@ class StocksController(model.StocksRoot):
         Attributes:
             `recom`: Get tradingview recommendation based on technical indicators\n
             `recom_chart`: Print tradingview recommendation based on technical indicators\n
-            `rsp`: Relative strength percentile [Source: https://github.com/skyte/relative-strength]\n
-            `rsp_chart`: Display Relative Strength Percentile [Source: https://github.com/skyte/relative-strength]\n
             `summary`: Get technical summary report provided by FinBrain's API\n
             `summary_chart`: Print technical summary report provided by FinBrain's API\n
-            `view`: Get finviz image for given ticker\n
-            `view_chart`: View finviz image for ticker\n
         """
 
         return model.StocksTechnicalAnalysis()

@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Type, Union
 
 import pandas as pd
 
-from openbb_terminal import OpenBBFigure, theme
+from openbb_terminal import OpenBBFigure, config_terminal, theme
 from openbb_terminal.common.technical_analysis import ta_helpers
 from openbb_terminal.core.config.paths import REPOSITORY_DIRECTORY
 from openbb_terminal.core.plots.plotly_ta.base import PltTA
@@ -85,7 +85,6 @@ class PlotlyTA(PltTA):
     close_column: Optional[str] = "Close"
     has_volume: bool = True
     show_volume: bool = True
-    prepost: bool = False
 
     def __new__(cls, *args, **kwargs):
         """This method is overridden to create a singleton instance of the class."""
@@ -141,11 +140,17 @@ class PlotlyTA(PltTA):
         symbol: str = "",
         candles: bool = True,
         volume: bool = True,
-        prepost: bool = False,
         fig: Optional[OpenBBFigure] = None,
         volume_ticks_x: int = 7,
     ) -> OpenBBFigure:
         """This method should not be called directly. Use the PlotlyTA.plot() static method instead."""
+
+        if config_terminal.HOLD:
+            console.print(
+                "The previous command is not supported within hold on.  Only the last command run"
+                "will be displayed when hold off is run."
+            )
+
         if isinstance(df_stock, pd.Series):
             df_stock = df_stock.to_frame()
 
@@ -163,8 +168,6 @@ class PlotlyTA(PltTA):
         )
         self.show_volume = volume and self.has_volume
 
-        self.prepost = prepost
-
         return self.plot_fig(
             fig=fig, symbol=symbol, candles=candles, volume_ticks_x=volume_ticks_x
         )
@@ -176,7 +179,6 @@ class PlotlyTA(PltTA):
         symbol: str = "",
         candles: bool = True,
         volume: bool = True,
-        prepost: bool = False,
         fig: Optional[OpenBBFigure] = None,
         volume_ticks_x: int = 7,
     ) -> OpenBBFigure:
@@ -201,8 +203,6 @@ class PlotlyTA(PltTA):
             Plot a candlestick chart, by default True (if False, plots a line chart)
         volume : bool, optional
             Plot volume, by default True
-        prepost : bool, optional
-            Plot pre and post market data, by default False
         fig : OpenBBFigure, optional
             Plotly figure to plot on, by default None
         volume_ticks_x : int, optional
@@ -212,7 +212,7 @@ class PlotlyTA(PltTA):
             indicators = PLOTLY_TA.indicators
 
         return PlotlyTA().__plot__(
-            df_stock, indicators, symbol, candles, volume, prepost, fig, volume_ticks_x
+            df_stock, indicators, symbol, candles, volume, fig, volume_ticks_x
         )
 
     @staticmethod
@@ -357,6 +357,7 @@ class PlotlyTA(PltTA):
             1,
             shared_xaxes=True,
             vertical_spacing=0.06,
+            horizontal_spacing=0.01,
             row_width=[1],
             specs=[[{"secondary_y": True}]],
         )
@@ -376,7 +377,7 @@ class PlotlyTA(PltTA):
                 showlegend=False,
                 row=1,
                 col=1,
-                secondary_y=self.show_volume,
+                secondary_y=False,
             )
         else:
             fig.add_scatter(
@@ -386,7 +387,7 @@ class PlotlyTA(PltTA):
                 connectgaps=True,
                 row=1,
                 col=1,
-                secondary_y=self.show_volume,
+                secondary_y=False,
             )
             fig.update_layout(yaxis=dict(nticks=15))
             self.inchart_colors = theme.get_colors()[1:]
@@ -451,12 +452,12 @@ class PlotlyTA(PltTA):
                     if indicator in self.ma_mode:
                         if ma_done:
                             continue
-                        indicator, ma_done = "ma", True
+                        indicator, ma_done = "ma", True  # noqa
 
                     figure, inchart_index = getattr(self, f"plot_{indicator}")(
                         figure, self.df_ta, inchart_index
                     )
-                elif indicator in ["fib", "srlines", "demark", "clenow"]:
+                elif indicator in ["fib", "srlines", "demark", "clenow", "ichimoku"]:
                     figure = getattr(self, f"plot_{indicator}")(figure, self.df_ta)
                 else:
                     raise ValueError(f"Unknown indicator: {indicator}")
@@ -482,18 +483,17 @@ class PlotlyTA(PltTA):
                 continue
 
         figure.update(fig_new)
-        figure.set_yaxis_title(
-            "Price ($)",
+        figure.update_yaxes(
             row=1,
             col=1,
-            secondary_y=self.show_volume,
+            secondary_y=False,
             nticks=15 if subplot_row < 3 else 10,
+            tickfont=dict(size=16),
         )
         figure.update_traces(
             selector=dict(type="scatter", mode="lines"), connectgaps=True
         )
         figure.update_layout(showlegend=False)
-        figure.hide_holidays(self.prepost)
 
         if not self.show_volume:
             figure.update_layout(margin=dict(l=20))
@@ -552,8 +552,7 @@ class PlotlyTA(PltTA):
         for trace in fig.select_traces():
             xref, yref = trace.xaxis, trace.yaxis
             row, col = subplots[xref][yref][0]
-            secondary_y = not row > 1 if self.show_volume else False
-            new_subplot.add_trace(trace, row=row, col=col, secondary_y=secondary_y)
+            new_subplot.add_trace(trace, row=row, col=col, secondary_y=False)
 
         fig_json = fig.to_plotly_json()["layout"]
         for layout in fig_json:

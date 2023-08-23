@@ -20,7 +20,7 @@ def test_databento_model():
     )
     assert model.symbol == "AAPL"
     assert model.exchange == "XNAS.ITCH"
-    assert model.stype == "native"
+    assert model.stype == "raw_symbol"
     assert model.start == "2021-08-10"
     assert model.end == "2021-08-11"
 
@@ -29,7 +29,7 @@ def test_databento_model():
 def test_stock_load(recorder):
     """Tests the stock load function."""
     result = databento_model.get_historical_stock(
-        symbol="AAPL", start_date="2022-08-01", end_date="2022-12-01"
+        symbol="AAPL", start_date="2022-08-01", end_date="2022-10-01"
     )
     assert result.empty is False
     recorder.capture(result)

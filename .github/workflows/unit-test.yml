@@ -3,7 +3,6 @@ name: Unit Test
 env:
   OPENBB_ENABLE_QUICK_EXIT: true
   OPENBB_LOG_COLLECT: false
-  OPENBB_USE_ION: false
   OPENBB_USE_PROMPT_TOOLKIT: false
   OPENBB_FILE_OVERWRITE: true
   OPENBB_ENABLE_CHECK_API: false
@@ -76,7 +75,7 @@ jobs:
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
-          version: 1.4.0
+          version: 1.5.1
           virtualenvs-create: true
           virtualenvs-in-project: true
 
@@ -105,9 +104,6 @@ jobs:
           source $VENV
           pytest tests/ --optimization --cov --cov-fail-under=50 --autodoc -n auto --durations=10 --timeout=30 --cov-report=xml
 
-      - name: Upload coverage reports to Codecov with GitHub Action
-        uses: codecov/codecov-action@v3
-
       - name: Start Terminal and exit
         run: |
           source $VENV
@@ -120,7 +116,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
         os: [ubuntu-latest]
         exclude:
           - os: ubuntu-latest
@@ -138,7 +134,7 @@ jobs:
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
-          version: 1.4.0
+          version: 1.5.1
           virtualenvs-create: true
           virtualenvs-in-project: true
 
@@ -165,7 +161,6 @@ jobs:
         run: |
           source $VENV
           pip list
-
       - name: Run tests
         env:
           MPLBACKEND: Agg
@@ -186,7 +181,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
         os: [ubuntu-latest, macos-latest]
         exclude:
           - os: ubuntu-latest
@@ -204,7 +199,7 @@ jobs:
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
-          version: 1.4.0
+          version: 1.5.1
           virtualenvs-create: true
           virtualenvs-in-project: true
 
@@ -253,13 +248,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu", "windows", "macos"]
+        os: ["ubuntu", "macos"]
         python-version: ["3.9"]
         dependencies: [""]
         include:
           - os: ubuntu
-            python: 3.9
-          - os: windows
             python: 3.9
     env:
       OS: ${{ matrix.os }}

@@ -56,7 +56,6 @@ class EconometricsController(BaseController):
         "type",
         "desc",
         "corr",
-        "season",
         "index",
         "clean",
         "add",
@@ -65,6 +64,7 @@ class EconometricsController(BaseController):
         "combine",
         "rename",
         "lag",
+        "ret",
         "ols",
         "norm",
         "root",
@@ -73,8 +73,10 @@ class EconometricsController(BaseController):
         "dwat",
         "bgod",
         "bpag",
+        "garch",
         "granger",
         "coint",
+        "vif",
     ]
     CHOICES_MENUS: List[str] = [
         "qa",
@@ -162,7 +164,7 @@ class EconometricsController(BaseController):
         }
 
         if session and get_current_user().preferences.USE_PROMPT_TOOLKIT:
-            choices: dict = {c: {} for c in self.controller_choices}
+            choices: dict = self.choices_default
             choices["load"] = {
                 "--file": {c: {} for c in self.DATA_FILES},
                 "-f": "--file",
@@ -181,11 +183,13 @@ class EconometricsController(BaseController):
                 "plot",
                 "norm",
                 "root",
+                "garch",
                 "granger",
                 "coint",
                 "corr",
-                "season",
                 "lag",
+                "vif",
+                "panel",
             ]:
                 choices[feature] = dict()
 
@@ -211,12 +215,12 @@ class EconometricsController(BaseController):
                 "norm",
                 "root",
                 "coint",
-                "season",
                 "lag",
                 "regressions",
                 "ols",
                 "panel",
                 "delete",
+                "garch",
             ]:
                 self.choices[feature] = dataset_columns
             for feature in [
@@ -231,12 +235,14 @@ class EconometricsController(BaseController):
             ]:
                 self.choices[feature] = {c: {} for c in self.files}
 
-            self.choices["type"] = {
-                c: {} for c in self.files + list(dataset_columns.keys())
-            }
-            self.choices["desc"] = {
-                c: {} for c in self.files + list(dataset_columns.keys())
-            }
+            for feature in ["type", "desc", "vif"]:
+                self.choices[feature] = {
+                    c: {} for c in self.files + list(dataset_columns.keys())
+                }
+            self.choices["vif"] = dict(
+                self.choices["vif"],
+                **{"-d": self.choices["vif"], "--data": self.choices["vif"]},
+            )
 
             pairs_timeseries = list()
             for dataset_col in list(dataset_columns.keys()):
@@ -271,7 +277,6 @@ class EconometricsController(BaseController):
         mt.add_cmd("type", self.files)
         mt.add_cmd("desc", self.files)
         mt.add_cmd("corr", self.files)
-        mt.add_cmd("season", self.files)
         mt.add_cmd("index", self.files)
         mt.add_cmd("clean", self.files)
         mt.add_cmd("add", self.files)
@@ -280,20 +285,23 @@ class EconometricsController(BaseController):
         mt.add_cmd("combine", self.files)
         mt.add_cmd("rename", self.files)
         mt.add_cmd("lag", self.files)
+        mt.add_cmd("ret", self.files)
         mt.add_cmd("export", self.files)
-        mt.add_info("_tests_")
+        mt.add_info("_assumption_testing_")
         mt.add_cmd("norm", self.files)
-        mt.add_cmd("root", self.files)
         mt.add_cmd("granger", self.files)
+        mt.add_cmd("root", self.files)
         mt.add_cmd("coint", self.files)
-        mt.add_info("_regression_")
-        mt.add_cmd("ols", self.files)
-        mt.add_cmd("panel", self.files)
-        mt.add_cmd("compare", self.files)
-        mt.add_info("_regression_tests_")
+        mt.add_cmd("vif", self.files)
         mt.add_cmd("dwat", self.files and self.regression["OLS"]["model"])
         mt.add_cmd("bgod", self.files and self.regression["OLS"]["model"])
         mt.add_cmd("bpag", self.files and self.regression["OLS"]["model"])
+        mt.add_info("_time_series_")
+        mt.add_cmd("ols", self.files)
+        mt.add_cmd("garch", self.files)
+        mt.add_info("_panel_")
+        mt.add_cmd("panel", self.files)
+        mt.add_cmd("compare", self.files)
 
         console.print(text=mt.menu_text, menu="Econometrics")
         console.print()
@@ -621,7 +629,7 @@ class EconometricsController(BaseController):
                     df,
                     headers=list(df.columns),
                     show_index=True,
-                    title=f"Dataset {name} | Showing {ns_parser.limit} of {len(df)} rows",
+                    title=f"Dataset {name}",
                     export=bool(ns_parser.export),
                     limit=ns_parser.limit,
                 )
@@ -740,79 +748,6 @@ class EconometricsController(BaseController):
                 data,
                 ns_parser.export,
             )
-
-    @log_start_end(log=logger)
-    def call_season(self, other_args: List[str]):
-        """Process season command"""
-        parser = argparse.ArgumentParser(
-            add_help=False,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-            prog="season",
-            description="The seasonality for a given column",
-        )
-        parser.add_argument(
-            "-v",
-            "--values",
-            help="Dataset.column values to be displayed in a plot",
-            dest="values",
-            choices={
-                f"{dataset}.{column}": {column: None, dataset: None}
-                for dataset, dataframe in self.datasets.items()
-                for column in dataframe.columns
-            },
-            type=str,
-        )
-        parser.add_argument(
-            "-m",
-            help="A time lag to highlight on the plot",
-            dest="m",
-            type=int,
-            default=None,
-        )
-        parser.add_argument(
-            "--max_lag",
-            help="The maximal lag order to consider",
-            dest="max_lag",
-            type=int,
-            default=24,
-        )
-        parser.add_argument(
-            "-a",
-            "--alpha",
-            help="The confidence interval to display",
-            dest="alpha",
-            type=float,
-            default=0.05,
-        )
-        if other_args and "-" not in other_args[0][0]:
-            other_args.insert(0, "-v")
-        ns_parser = self.parse_known_args_and_warn(
-            parser, other_args, export_allowed=EXPORT_ONLY_FIGURES_ALLOWED
-        )
-
-        if not ns_parser:
-            return
-
-        if not ns_parser.values:
-            console.print("[red]Please enter valid dataset.\n[/red]")
-            return
-
-        try:
-            dataset, col = ns_parser.values.split(".")
-            data = self.datasets[dataset]
-            data.name = dataset
-        except ValueError:
-            console.print("[red]Please enter 'dataset'.'column'.[/red]\n")
-            return
-
-        econometrics_view.display_seasonality(
-            data=data,
-            column=col,
-            export=ns_parser.export,
-            m=ns_parser.m,
-            max_lag=ns_parser.max_lag,
-            alpha=ns_parser.alpha,
-        )
 
     @log_start_end(log=logger)
     def call_type(self, other_args: List[str]):
@@ -1220,6 +1155,50 @@ class EconometricsController(BaseController):
         data[col + "_with_" + str(ns_parser.lags) + "_lags"] = data[col].shift(
             ns_parser.lags, fill_value=ns_parser.fill_value
         )
+        self.datasets[dataset] = data
+
+        self.update_runtime_choices()
+
+    @log_start_end(log=logger)
+    def call_ret(self, other_args: List[str]):
+        """Process ret command"""
+        parser = argparse.ArgumentParser(
+            add_help=False,
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+            prog="ret",
+            description="Calculate returns for the given column.",
+        )
+        parser.add_argument(
+            "-v",
+            "--values",
+            help="Dataset.column values to calculate returns.",
+            dest="values",
+            choices={
+                f"{dataset}.{column}": {column: None, dataset: None}
+                for dataset, dataframe in self.datasets.items()
+                for column in dataframe.columns
+            },
+            type=str,
+            required="-h" not in other_args,
+        )
+
+        if other_args and "-" not in other_args[0][0]:
+            other_args.insert(0, "-v")
+        ns_parser = self.parse_known_args_and_warn(
+            parser, other_args, export_allowed=NO_EXPORT
+        )
+
+        if not ns_parser:
+            return
+
+        try:
+            dataset, col = ns_parser.values.split(".")
+            data = self.datasets[dataset]
+        except ValueError:
+            console.print("[red]Please enter 'dataset'.'column'.[/red]\n")
+            return
+
+        data[col + "_returns"] = econometrics_model.get_returns(data[col])
         self.datasets[dataset] = data
 
         self.update_runtime_choices()
@@ -1834,7 +1813,7 @@ class EconometricsController(BaseController):
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
             prog="bgod",
             description=(
-                "Show Breusch-Godfrey autocorrelation test results."
+                "Show Breusch-Godfrey autocorrelation test results. "
                 "Needs OLS to be run in advance with independent and dependent variables"
             ),
         )
@@ -1889,6 +1868,124 @@ class EconometricsController(BaseController):
                 regression_view.display_bpag(
                     self.regression["OLS"]["model"], ns_parser.export
                 )
+
+    @log_start_end(log=logger)
+    def call_garch(self, other_args: List[str]):
+        """Process garch command"""
+        parser = argparse.ArgumentParser(
+            add_help=False,
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+            prog="garch",
+            description=r"""Calculates annualized volatility forecasts based on GARCH.
+            GARCH (Generalized autoregressive conditional heteroskedasticity) is stochastic model for time series,
+            which is for instance used to model volatility clusters, stock return and inflation. It is a
+            generalisation of the ARCH models.
+
+            $\text{GARCH}(p, q)  = (1 - \alpha - \beta) \sigma_l + \sum_{i=1}^q \alpha u_{t-i}^2 + \sum_{i=1}^p \beta
+            \sigma_{t-i}^2$ [1]
+
+            The GARCH-model assumes that the variance estimate consists of 3 components:
+            - $\sigma_l$ ; the long term component, which is unrelated to the current market conditions
+            - $u_t$ ; the innovation/discovery through current market price changes
+            - $\sigma_t$ ; the last estimate
+
+            GARCH can be understood as a model, which allows to optimize these 3 variance components to the time
+            series. This is done assigning weights to variance components: $(1 - \alpha - \beta)$ for $\sigma_l$ ,
+            $\alpha$ for $u_t$ and $\beta$ for $\sigma_t$ . [2]
+
+            The weights can be estimated by iterating over different values of $(1 - \alpha - \beta) \sigma_l$
+            which we will call $\omega$ , $\alpha$ and $\beta$ , while maximizing:
+            $\sum_{i} -ln(v_i) - (u_i ^ 2) / v_i$ . With the constraints:
+            - $\alpha > 0$
+            - $\beta > 0$
+            - $\alpha + \beta < 1$
+            Note that there is no restriction on $\omega$ .
+
+            Another method used for estimation is "variance targeting", where one first sets $\omega$
+            equal to the variance of the time series. This method nearly as effective as the previously mentioned and
+            is less computationally effective.
+
+            One can measure the fit of the time series to the GARCH method by using the Ljung-Box statistic. [3]
+
+            See the sources below for reference and for greater detail.
+
+            Sources:
+            [1] Generalized Autoregressive Conditional Heteroskedasticity, by Tim Bollerslev
+            [2] Finance Compact Plus Band 1, by Yvonne Seler Zimmerman and Heinz Zimmerman; ISBN: 978-3-907291-31-1
+            [3] Options, Futures & other Derivates, by John C. Hull; ISBN: 0-13-022444-8""",
+        )
+        parser.add_argument(
+            "-v",
+            "--value",
+            type=str,
+            choices=self.choices["garch"],
+            dest="column",
+            help="The column and name of the database you want to estimate volatility for",
+            required="-h" not in other_args,
+        )
+        parser.add_argument(
+            "-p",
+            help="The lag order of the symmetric innovation",
+            dest="p",
+            type=int,
+            default=1,
+        )
+        parser.add_argument(
+            "-o",
+            help="The lag order of the asymmetric innovation",
+            dest="o",
+            type=int,
+            default=0,
+        )
+        parser.add_argument(
+            "-q",
+            help="The lag order of lagged volatility or equivalent",
+            dest="q",
+            type=int,
+            default=1,
+        )
+        parser.add_argument(
+            "-m",
+            "--mean",
+            help="Choose mean model",
+            choices=["LS", "AR", "ARX", "HAR", "HARX", "constant", "zero"],
+            default="constant",
+            type=str,
+            dest="mean",
+        )
+        parser.add_argument(
+            "-l",
+            "--length",
+            help="The length of the estimate",
+            dest="horizon",
+            type=int,
+            default=100,
+        )
+        parser.add_argument(
+            "-d",
+            "--detailed",
+            help="Display the details about the parameter fit, for instance the confidence interval",
+            dest="detailed",
+            action="store_true",
+            default=False,
+        )
+        if other_args and "-" not in other_args[0][0]:
+            other_args.insert(0, "-v")
+        ns_parser = self.parse_known_args_and_warn(
+            parser, other_args, EXPORT_BOTH_RAW_DATA_AND_FIGURES
+        )
+        if ns_parser:
+            dataset, column = ns_parser.column.split(".")
+            econometrics_view.display_garch(
+                self.datasets[dataset],
+                column,
+                ns_parser.p,
+                ns_parser.o,
+                ns_parser.q,
+                ns_parser.mean,
+                ns_parser.horizon,
+                ns_parser.detailed,
+            )
 
     @log_start_end(log=logger)
     def call_granger(self, other_args: List[str]):
@@ -2014,3 +2111,78 @@ class EconometricsController(BaseController):
                 console.print(
                     "[red]More than one dataset.column must be provided.\n[/red]"
                 )
+
+    @log_start_end(log=logger)
+    def call_vif(self, other_args: List[str]):
+        """Process vif command"""
+        parser = argparse.ArgumentParser(
+            add_help=False,
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+            prog="vif",
+            description=r"""Calculates VIF (variance inflation factor), which tests collinearity.
+
+            It quantifies the severity of multicollinearity in an ordinary least squares regression analysis. The square
+            root of the variance inflation factor indicates how much larger the standard error increases compared to if
+            that variable had 0 correlation to other predictor variables in the model.
+
+            It is defined as:
+
+            $ VIF_i = 1 / (1 - R_i^2) $
+            where $ R_i $ is the coefficient of determination of the regression equation with the column i being the
+            result from the i:th series being the exogenous variable.
+
+            A VIF over 5 indicates a high collinearity and correlation. Values over 10 indicates causes problems,
+            while a value of 1 indicates no correlation. Thus VIF values between 1 and 5 are most commonly considered
+            acceptable. In order to improve the results one can often remove a column with high VIF.
+
+            For further information see: https://en.wikipedia.org/wiki/Variance_inflation_factor""",
+        )
+        parser.add_argument(
+            "-d",
+            "--data",
+            help="The datasets and columns we want to add <dataset>,<dataset2.column>,<dataset2.column2>",
+            dest="data",
+            type=check_list_values(self.choices["vif"]),
+            default=None,
+        )
+        if other_args and "-" not in other_args[0][0]:
+            other_args.insert(0, "-d")
+        ns_parser = self.parse_known_args_and_warn(
+            parser, other_args, EXPORT_ONLY_RAW_DATA_ALLOWED
+        )
+
+        data = pd.DataFrame()
+        if ns_parser:
+            if ns_parser.data is None:
+                console.print("[red]Please enter a dataset to calculate vif for.[/red]")
+                return
+            if len(ns_parser.data) == 1 and "." in ns_parser.data[0]:
+                console.print(
+                    "[red]Please enter at least a dataset or two columns to calculate vif for."
+                    "vif can only be calculated for at least two columns.[/red]"
+                )
+            for option in ns_parser.data:
+                if "." in option:
+                    dataset, column = option.split(".")
+                else:
+                    dataset = option
+                    column = None
+
+                if dataset not in self.datasets:
+                    console.print(
+                        f"[red]Not able to find the dataset {dataset}. Please choose one of "
+                        f"the following: {', '.join(self.datasets)}[/red]"
+                    )
+                elif column is not None:
+                    if column not in self.datasets[dataset]:
+                        console.print(
+                            f"[red]Not able to find the column {column}. Please choose one of "
+                            f"the following: {', '.join(self.datasets[dataset].data)}[/red]"
+                        )
+                    else:
+                        data[f"{dataset}_{column}"] = self.datasets[dataset][column]
+                else:
+                    for column in list(self.datasets[dataset].columns):
+                        data[f"{dataset}_{column}"] = self.datasets[dataset][column]
+
+            econometrics_view.display_vif(data)

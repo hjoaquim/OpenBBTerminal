@@ -213,6 +213,32 @@ def test_set_news_key(args: List[str], persist: bool, show_output: bool, mocker)
         ),
     ],
 )
+def test_set_biztoc_key(args: List[str], persist: bool, show_output: bool, mocker):
+    mock_check = mocker.patch("openbb_terminal.keys_model.check_biztoc_key")
+    keys_model.set_biztoc_key(
+        key=args[0],
+        persist=persist,
+        show_output=show_output,
+    )
+    mock_check.assert_called_once_with(show_output)
+
+
+@pytest.mark.vcr
+@pytest.mark.parametrize(
+    "args, persist, show_output",
+    [
+        (
+            ["test_key"],
+            False,
+            True,
+        ),
+        (
+            ["test_key"],
+            False,
+            False,
+        ),
+    ],
+)
 def test_set_tradier_key(args: List[str], persist: bool, show_output: bool, mocker):
     mock_check = mocker.patch("openbb_terminal.keys_model.check_tradier_key")
     keys_model.set_tradier_key(
@@ -335,34 +361,6 @@ def test_set_bitquery_key(args: List[str], persist: bool, show_output: bool, moc
     mock_check = mocker.patch("openbb_terminal.keys_model.check_bitquery_key")
     keys_model.set_bitquery_key(
         key=args[0],
-        persist=persist,
-        show_output=show_output,
-    )
-    mock_check.assert_called_once_with(show_output)
-
-
-@pytest.mark.vcr
-@pytest.mark.parametrize(
-    "args, persist, show_output",
-    [
-        (
-            ["test_key", "test_secret", "test_access_token"],
-            False,
-            True,
-        ),
-        (
-            ["test_key", "test_secret", "test_access_token"],
-            False,
-            False,
-        ),
-    ],
-)
-def test_set_twitter_key(args: List[str], persist: bool, show_output: bool, mocker):
-    mock_check = mocker.patch("openbb_terminal.keys_model.check_twitter_key")
-    keys_model.set_twitter_key(
-        key=args[0],
-        secret=args[1],
-        access_token=args[2],
         persist=persist,
         show_output=show_output,
     )
@@ -789,32 +787,6 @@ def test_set_tokenterminal_key(
 ):
     mock_check = mocker.patch("openbb_terminal.keys_model.check_tokenterminal_key")
     keys_model.set_tokenterminal_key(
-        key=args[0],
-        persist=persist,
-        show_output=show_output,
-    )
-    mock_check.assert_called_once_with(show_output)
-
-
-@pytest.mark.vcr
-@pytest.mark.parametrize(
-    "args, persist, show_output",
-    [
-        (
-            ["test_key"],
-            False,
-            True,
-        ),
-        (
-            ["test_key"],
-            False,
-            False,
-        ),
-    ],
-)
-def test_set_shroom_key(args: List[str], persist: bool, show_output: bool, mocker):
-    mock_check = mocker.patch("openbb_terminal.keys_model.check_shroom_key")
-    keys_model.set_shroom_key(
         key=args[0],
         persist=persist,
         show_output=show_output,

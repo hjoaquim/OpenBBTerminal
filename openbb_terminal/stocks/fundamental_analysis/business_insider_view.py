@@ -126,9 +126,12 @@ def display_price_target_from_analysts(
         return console.print("[red]Could not get data for ticker.[/red]\n")
     if adjust_for_splits:
         df_splits = yahoo_finance_model.get_splits(symbol)
-        df_splits.index = df_splits.index.tz_convert(None)
-        adjusted_splits = partial(adjust_splits, splits=df_splits)
-        df_analyst_data["Price Target"] = df_analyst_data.apply(adjusted_splits, axis=1)
+        if not df_splits.empty:
+            df_splits.index = df_splits.index.tz_convert(None)
+            adjusted_splits = partial(adjust_splits, splits=df_splits)
+            df_analyst_data["Price Target"] = df_analyst_data.apply(
+                adjusted_splits, axis=1
+            )
 
     fig = OpenBBFigure(yaxis_title="Share Price").set_title(
         f"{symbol} (Time Series) and Price Target"
@@ -151,22 +154,44 @@ def display_price_target_from_analysts(
 
     fig.add_scatter(
         x=df_grouped.index,
-        y=df_grouped.values,
+        y=df_grouped["Price Target"].values,
         name="Average Price Target",
+    )
+
+    colors = df_analyst_plot["Rating"].apply(
+        lambda x: theme.up_color
+        if x == "BUY"
+        else theme.down_color
+        if x == "SELL"
+        else "#b3a8a8"
     )
 
     fig.add_scatter(
         x=df_analyst_plot.index,
         y=df_analyst_plot["Price Target"].values,
         name="Price Target",
-        mode="markers+lines",
+        mode="markers",
+        customdata=df_analyst_plot.apply(
+            lambda row: "<br>".join(
+                [
+                    f"<b>${x['Price Target']}</b> - <b>{x['Company']} ({x['Rating']})</b>"
+                    for _, x in df_analyst_plot[df_analyst_plot.index == row.name]
+                    .sort_values(by="Price Target", ascending=False)
+                    .iterrows()
+                ]
+            ),
+            axis=1,
+        ),
+        hovertemplate="<br>%{customdata}",
         marker=dict(
-            color=theme.down_color,
-            line=dict(color=theme.up_color, width=1),
+            color=colors,
+            line=dict(width=1, color="DarkSlateGrey"),
             size=10,
         ),
         line=dict(color=theme.get_colors()[1]),
     )
+
+    fig.update_layout(hovermode="x unified")
 
     export_data(
         export,
@@ -212,7 +237,7 @@ def display_estimates(
         df_quarter_revenues,
     ) = business_insider_model.get_estimates(symbol)
 
-    if estimate == "annualearnings":
+    if estimate == "annual_earnings":
         print_rich_table(
             df_year_estimates,
             headers=list(df_year_estimates.columns),
@@ -228,7 +253,7 @@ def display_estimates(
             sheet_name,
         )
 
-    elif estimate == "quarterearnings":
+    elif estimate == "quarter_earnings":
         print_rich_table(
             df_quarter_earnings,
             headers=list(df_quarter_earnings.columns),
@@ -244,7 +269,7 @@ def display_estimates(
             sheet_name,
         )
 
-    elif estimate == "annualrevenue":
+    elif estimate == "quarter_revenues":
         print_rich_table(
             df_quarter_revenues,
             headers=list(df_quarter_revenues.columns),

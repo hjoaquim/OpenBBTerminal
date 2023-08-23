@@ -13,7 +13,6 @@ from scipy.stats import binom
 from openbb_terminal import OpenBBFigure, theme
 from openbb_terminal.core.plots.config.openbb_styles import (
     PLT_3DMESH_COLORSCALE,
-    PLT_3DMESH_HOVERLABEL,
     PLT_3DMESH_SCENE,
 )
 from openbb_terminal.decorators import log_start_end
@@ -321,15 +320,14 @@ def display_vol_surface(
     tick_kwargs = dict(tickfont=dict(size=13), titlefont=dict(size=16))
     fig.update_layout(
         scene=dict(
-            xaxis=dict(title="Strike", **tick_kwargs),
-            yaxis=dict(title="DTE", **tick_kwargs),
+            xaxis=dict(title="DTE", **tick_kwargs),
+            yaxis=dict(title="Strike", **tick_kwargs),
             zaxis=dict(title=z, **tick_kwargs),
         )
     )
     fig.update_layout(
         margin=dict(l=5, r=10, t=40, b=20),
         title_x=0.5,
-        hoverlabel=PLT_3DMESH_HOVERLABEL,
         scene_camera=dict(
             up=dict(x=0, y=0, z=2),
             center=dict(x=0, y=0, z=-0.3),
@@ -389,7 +387,7 @@ def show_greeks(
     chain = get_option_chain(symbol, expiry)
 
     min_strike, max_strike = op_helpers.get_strikes(
-        min_sp=mini, max_sp=maxi, current_price=current_price
+        min_sp=mini, max_sp=maxi, chain=chain.puts
     )
 
     for option in ["calls", "puts"]:

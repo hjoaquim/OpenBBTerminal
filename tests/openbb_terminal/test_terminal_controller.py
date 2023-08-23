@@ -20,7 +20,6 @@ from openbb_terminal.core.session.current_user import (
 def test_terminal_quick_exit(mocker):
     preferences = PreferencesModel(
         ENABLE_QUICK_EXIT=True,
-        USE_ION=False,
         USE_PROMPT_TOOLKIT=True,
     )
     mock_current_user = copy_user(preferences=preferences)
@@ -40,7 +39,6 @@ def test_terminal_quick_exit(mocker):
 def test_terminal_quit(mocker):
     preferences = PreferencesModel(
         ENABLE_QUICK_EXIT=True,
-        USE_ION=False,
         USE_PROMPT_TOOLKIT=True,
     )
     mock_current_user = copy_user(preferences=preferences)
@@ -70,10 +68,10 @@ def no_suppress():
 @pytest.mark.vcr(record_mode="none")
 @pytest.mark.record_stdout
 @pytest.mark.parametrize(
-    "debug, path",
-    [(True, None), (False, ["scripts/test_alt_covid.openbb"])],
+    "debug, dev, path",
+    [(True, False, None), (False, False, ["scripts/test_alt_covid.openbb"])],
 )
-def test_menu(mocker, debug, path):
+def test_menu(mocker, debug, dev, path):
     mocker.patch(target="terminal_controller.terminal")
     mocker.patch(target="terminal_controller.suppress_stdout", side_effect=no_suppress)
-    terminal_controller.main(debug, path)
+    terminal_controller.main(debug, dev, path)

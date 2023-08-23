@@ -17,8 +17,20 @@ keywords:
     how to,
     explanation,
     openbb terminal,
+    pypi,
+    c++,
+    miniconda,
+    library,
+    arm,
+    library,
+    error,
+    raspberry pi,
   ]
 ---
+
+import HeadTitle from '@site/src/components/General/HeadTitle.tsx';
+
+<HeadTitle title="Installation and Updates - Terminal | OpenBB Docs" />
 
 ## Installation and Updates
 
@@ -62,6 +74,10 @@ poetry install -E all
 
 Download and install [C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/), restart the machine, then try again.
 
+![image](https://github.com/OpenBB-finance/OpenBBTerminal/assets/85772166/ceb57be0-6dae-42f2-aca6-bf62ce7d6135)
+
+![image](https://github.com/OpenBB-finance/OpenBBTerminal/assets/85772166/f8aef8fc-a080-4164-bd36-460714ec44f3)
+
 </details>
 
 <details><summary>Error: failed building wheel for bt</summary>
@@ -100,4 +116,3 @@ brew install libomp
 ```
 
 </details>
-

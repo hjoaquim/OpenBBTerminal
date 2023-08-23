@@ -335,11 +335,6 @@ def prepare_scale_train_valid_test(
     )
 
 
-def lambda_price_prediction_color(val: float) -> str:
-    """Set prediction to be a colored string. This was changed to always shows blue"""
-    return f"[#00AAFF]{val:.2f} [/#00AAFF]"
-
-
 def print_pretty_prediction(df_pred: pd.DataFrame, last_price: float):
     """Print predictions"""
 
@@ -348,7 +343,7 @@ def print_pretty_prediction(df_pred: pd.DataFrame, last_price: float):
         df_pred.columns = ["pred"]
         if not get_current_user().preferences.USE_INTERACTIVE_DF:
             df_pred["pred"] = df_pred["pred"].apply(
-                lambda x: lambda_price_prediction_color(x)
+                lambda x: f"[#00AAFF]{x:.2f} [/#00AAFF]"
             )
     if check_dates(df_pred.index.to_series()):
         df_pred.index = df_pred.index.date
@@ -1158,7 +1153,7 @@ def check_parser_input(parser: argparse.ArgumentParser, datasets, *args) -> bool
     if not hasattr(parser, "target_dataset"):
         return False
     if not parser.target_dataset:  # type: ignore
-        console.print("[red]Please enter valid dataset.\n[/red]")
+        console.print("[red]Please select a valid dataset with the -d flag.\n[/red]")
         return False
     if "ignore_column" in args:
         return True

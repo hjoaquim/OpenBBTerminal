@@ -1,4 +1,4 @@
-""" Discovery Controller Module """
+"""Discovery Controller Module."""
 __docformat__ = "numpy"
 
 import argparse
@@ -25,6 +25,7 @@ from openbb_terminal.stocks.discovery import (
     ark_view,
     finnhub_view,
     finviz_view,
+    fmp_view,
     nasdaq_view,
     seeking_alpha_view,
     shortinterest_view,
@@ -41,6 +42,7 @@ class DiscoveryController(BaseController):
     """Discovery Controller class"""
 
     CHOICES_COMMANDS = [
+        "filings",
         "pipo",
         "fipo",
         "gainers",
@@ -55,7 +57,6 @@ class DiscoveryController(BaseController):
         "trending",
         "lowfloat",
         "hotpenny",
-        "cnews",
         "rtat",
         "divcal",
         "heatmap",
@@ -73,32 +74,7 @@ class DiscoveryController(BaseController):
         "shares",
     ]
     arkord_fund_choices = ["ARKK", "ARKF", "ARKW", "ARKQ", "ARKG", "ARKX", ""]
-    cnews_type_choices = [
-        nt.lower()
-        for nt in [
-            "Top-News",
-            "On-The-Move",
-            "Market-Pulse",
-            "Notable-Calls",
-            "Buybacks",
-            "Commodities",
-            "Crypto",
-            "Issuance",
-            "Global",
-            "Guidance",
-            "IPOs",
-            "SPACs",
-            "Politics",
-            "M-A",
-            "Consumer",
-            "Energy",
-            "Financials",
-            "Healthcare",
-            "MLPs",
-            "REITs",
-            "Technology",
-        ]
-    ]
+
     PATH = "/stocks/disc/"
     dividend_columns = [
         "Name",
@@ -125,6 +101,7 @@ class DiscoveryController(BaseController):
     def print_help(self):
         """Print help"""
         mt = MenuText("stocks/disc/")
+        mt.add_cmd("filings", "FinancialModelingPrep")
         mt.add_cmd("pipo", "Finnhub")
         mt.add_cmd("fipo", "Finnhub")
         mt.add_cmd("gainers", "Yahoo Finance")
@@ -137,7 +114,6 @@ class DiscoveryController(BaseController):
         mt.add_cmd("arkord", "Cathies Ark")
         mt.add_cmd("upcoming", "Seeking Alpha")
         mt.add_cmd("trending", "Seeking Alpha")
-        mt.add_cmd("cnews", "Seeking Alpha")
         mt.add_cmd("lowfloat", "Fidelity")
         mt.add_cmd("hotpenny", "Shortinterest")
         mt.add_cmd("rtat", "NASDAQ Data Link")
@@ -772,49 +748,6 @@ class DiscoveryController(BaseController):
             )
 
     @log_start_end(log=logger)
-    def call_cnews(self, other_args: List[str]):
-        """Process cnews command"""
-        parser = argparse.ArgumentParser(
-            add_help=False,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-            prog="cnews",
-            description="""Customized news. [Source: Seeking Alpha]""",
-        )
-        parser.add_argument(
-            "-t",
-            "--type",
-            action="store",
-            dest="s_type",
-            choices=self.cnews_type_choices,
-            default="top-news",
-            help="number of news to display",
-        )
-        parser.add_argument(
-            "-l",
-            "--limit",
-            action="store",
-            dest="limit",
-            type=check_positive,
-            default=5,
-            help="limit of news to display",
-        )
-        if other_args and "-" not in other_args[0][0]:
-            other_args.insert(0, "-t")
-
-        ns_parser = self.parse_known_args_and_warn(
-            parser, other_args, EXPORT_ONLY_RAW_DATA_ALLOWED
-        )
-        if ns_parser:
-            seeking_alpha_view.display_news(
-                news_type=ns_parser.s_type,
-                limit=ns_parser.limit,
-                export=ns_parser.export,
-                sheet_name=" ".join(ns_parser.sheet_name)
-                if ns_parser.sheet_name
-                else None,
-            )
-
-    @log_start_end(log=logger)
     def call_hotpenny(self, other_args: List[str]):
         """Process hotpenny command"""
         parser = argparse.ArgumentParser(
@@ -878,6 +811,45 @@ class DiscoveryController(BaseController):
         if ns_parser:
             nasdaq_view.display_top_retail(
                 limit=ns_parser.limit, export=ns_parser.export
+            )
+
+    @log_start_end(log=logger)
+    def call_filings(self, other_args: List[str]) -> None:
+        """Process Filings command"""
+        parser = argparse.ArgumentParser(
+            add_help=False,
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+            prog="filings",
+            description="The most-recent filings submitted to the SEC",
+        )
+        parser.add_argument(
+            "-p",
+            "--pages",
+            dest="pages",
+            metavar="pages",
+            type=int,
+            default=1,
+            help="The number of pages to get data from (1000 entries/page; maximum 30 pages)",
+        )
+        parser.add_argument(
+            "-t",
+            "--today",
+            dest="today",
+            action="store_true",
+            default=False,
+            help="Show all filings from today",
+        )
+        if other_args and "-" not in other_args[0][0]:
+            other_args.insert(0, "-l")
+        ns_parser = self.parse_known_args_and_warn(
+            parser,
+            other_args,
+            EXPORT_ONLY_RAW_DATA_ALLOWED,
+            limit=5,
+        )
+        if ns_parser:
+            fmp_view.display_filings(
+                ns_parser.pages, ns_parser.limit, ns_parser.today, ns_parser.export
             )
 
     @log_start_end(log=logger)

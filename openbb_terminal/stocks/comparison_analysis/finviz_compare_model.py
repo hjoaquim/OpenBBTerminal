@@ -41,9 +41,9 @@ def get_similar_companies(
     """
     try:
         compare_list = ["Sector", "Industry"] if compare_list is None else compare_list
-        similar = (
-            Overview().compare(symbol, compare_list, verbose=0)["Ticker"].to_list()
-        )
+        similar = Overview().compare(symbol, compare_list, verbose=0)
+        similar.columns = [x.strip() for x in similar.columns]
+        return similar.Ticker.to_list()
     except Exception as e:
         logger.exception(str(e))
         console.print(e)
@@ -79,6 +79,7 @@ def get_comparison_data(similar: List[str], data_type: str = "overview"):
         screen = ownership.Ownership()
     elif data_type == "performance":
         screen = performance.Performance()
+
     elif data_type == "technical":
         screen = technical.Technical()
     else:
@@ -87,7 +88,21 @@ def get_comparison_data(similar: List[str], data_type: str = "overview"):
 
     screen.set_filter(ticker=",".join(similar))
     try:
-        return screen.screener_view(verbose=0)
+        screen_df = screen.screener_view(verbose=0)
+        screen_df.columns = screen_df.columns.str.strip()
+        screen_df = screen_df.rename(
+            columns={
+                "Perf Week": "1W",
+                "Perf Month": "1M",
+                "Perf Quart": "3M",
+                "Perf Half": "6M",
+                "Perf Year": "1Y",
+                "Perf YTD": "YTD",
+                "Volatility W": "1W Volatility",
+                "Volatility M": "1M Volatility",
+            }
+        )
+        return screen_df
     except IndexError:
         console.print("[red]Invalid data from website[red]\n")
         return pd.DataFrame()

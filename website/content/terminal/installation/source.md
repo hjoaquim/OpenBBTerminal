@@ -1,7 +1,7 @@
 ---
 title: Source
 sidebar_position: 3
-description: This section provides steps to install the OpenBB Terminal and SDK from source. This installation type supports Windows, macOS and Linux systems.
+description: This section provides steps to install the OpenBB Terminal from source. This installation type supports Windows, macOS and Linux systems.
 keywords:
   [
     installation,
@@ -17,8 +17,20 @@ keywords:
     how to,
     explanation,
     openbb terminal,
+    pypi,
+    miniconda,
+    git,
+    c++,
+    rosetta2,
+    libomp,
+    vcxsrv,
+    gtk
   ]
 ---
+
+import HeadTitle from '@site/src/components/General/HeadTitle.tsx';
+
+<HeadTitle title="Source - Terminal | OpenBB Docs" />
 
 <!-- markdownlint-disable MD012 MD031 MD033 -->
 
@@ -45,6 +57,12 @@ If Miniconda is installed, a version number will be displayed, for example:
 
 ```shell
 conda 23.1.0
+```
+
+There is a good chance the version of Conda is not current. Update it with the command below:
+
+```shell
+conda update -n base -c conda-forge conda
 ```
 
 </details>
@@ -76,6 +94,11 @@ Or follow the instructions [here](https://git-scm.com/book/en/v2/Getting-Started
 <details><summary>Microsoft C++ Build Tools (Windows only)</summary>
 
 Use the instructions [here](https://visualstudio.microsoft.com/visual-cpp-build-tools/) to install or update Microsoft C++ Build Tools.
+
+![image](https://github.com/OpenBB-finance/OpenBBTerminal/assets/85772166/ceb57be0-6dae-42f2-aca6-bf62ce7d6135)
+
+![image](https://github.com/OpenBB-finance/OpenBBTerminal/assets/85772166/f8aef8fc-a080-4164-bd36-460714ec44f3)
+
 
 </details>
 
@@ -196,6 +219,10 @@ Create the environment by copying the code below into the command line and agree
 ```shell
 conda env create -n obb --file build/conda/conda-3-9-env.yaml
 ```
+
+:::note
+Additional `YAML` files provide support for Python versions 3.8 and 3.10.  Substitute the `9`, in the command above, with the desired version.
+:::
 
 After the obb environment is created, activate it by entering:
 

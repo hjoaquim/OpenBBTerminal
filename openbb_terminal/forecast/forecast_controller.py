@@ -25,11 +25,11 @@ try:
             "Follow instructions on creating a new conda environment with the latest "
             f"Darts version ({darts_latest}):"
         )
-        print("https://my.openbb.dev/app/sdk/installation")
+        print("https://my.openbb.co/app/sdk/installation")
 except ModuleNotFoundError:
     raise ModuleNotFoundError(
         "Please install the forecast version of the terminal. Instructions can be found "
-        "under the python tab: https://my.openbb.dev/app/sdk/installation"
+        "under the python tab: https://my.openbb.co/app/sdk/installation"
     )
 
 try:
@@ -1039,7 +1039,9 @@ class ForecastController(BaseController):
         if ns_parser:
             # check proper file name is provided
             if not ns_parser.target_dataset:
-                console.print("[red]Please enter valid dataset.\n[/red]")
+                console.print(
+                    "[red]Please select a valid dataset with the -d flag.\n[/red]"
+                )
                 return
 
             df = self.datasets[ns_parser.target_dataset]
@@ -1079,13 +1081,17 @@ class ForecastController(BaseController):
             return
 
         if not ns_parser.values:
-            console.print("[red]Please enter valid dataset.\n[/red]")
+            console.print(
+                "[red]Please select a valid dataset with the -d flag.\n[/red]"
+            )
             return
 
         values = [x.strip() for x in ns_parser.values.split(",")]
         target_df = values[0].split(".")[0]
         if target_df not in self.datasets:
-            console.print("[red]Please enter valid dataset.\n[/red]")
+            console.print(
+                "[red]Please select a valid dataset with the -d flag.\n[/red]"
+            )
             return
 
         for value in values:
@@ -1109,8 +1115,8 @@ class ForecastController(BaseController):
             description="The seasonality for a given column",
         )
         parser.add_argument(
-            "-v",
-            "--values",
+            "-d",
+            "--dataset",
             help="Dataset.column values to be displayed in a plot",
             dest="values",
             choices=self.get_dataset_columns(),
@@ -1148,7 +1154,9 @@ class ForecastController(BaseController):
             return
 
         if not ns_parser.values:
-            console.print("[red]Please enter valid dataset.\n[/red]")
+            console.print(
+                "[red]Please select a valid dataset with the -d flag.\n[/red]"
+            )
             return
 
         try:
@@ -1191,7 +1199,9 @@ class ForecastController(BaseController):
         if ns_parser:
             # check proper file name is provided
             if not ns_parser.target_dataset:
-                console.print("[red]Please enter valid dataset.\n[/red]")
+                console.print(
+                    "[red]Please select a valid dataset with the -d flag.\n[/red]"
+                )
                 return
 
             data = self.datasets[ns_parser.target_dataset]
@@ -1311,7 +1321,9 @@ class ForecastController(BaseController):
         if ns_parser:
             # check proper file name is provided
             if not ns_parser.target_dataset:
-                console.print("[red]Please enter valid dataset.\n[/red]")
+                console.print(
+                    "[red]Please select a valid dataset with the -d flag.\n[/red]"
+                )
                 return
 
             (
@@ -1412,7 +1424,9 @@ class ForecastController(BaseController):
         if ns_parser:
             # check proper file name is provided
             if not ns_parser.target_dataset:
-                console.print("[red]Please enter valid dataset.\n[/red]")
+                console.print(
+                    "[red]Please select a valid dataset with the -d flag.\n[/red]"
+                )
                 return
 
             df = forecast_model.add_sto(
@@ -1499,7 +1513,9 @@ class ForecastController(BaseController):
         if ns_parser:
             # check proper file name is provided
             if not ns_parser.target_dataset:
-                console.print("[red]Please enter valid dataset.\n[/red]")
+                console.print(
+                    "[red]Please select a valid dataset with the -d flag.\n[/red]"
+                )
                 return
 
             self.datasets[ns_parser.target_dataset] = forecast_model.add_rsi(
@@ -1758,6 +1774,13 @@ class ForecastController(BaseController):
             choices=common_model.file_types,
             type=str,
             default="xlsx",
+        )
+        parser.add_argument(
+            "--sheet-name",
+            help="The name of the sheet to export to when type is XLSX.",
+            dest="sheet_name",
+            type=str,
+            default="",
         )
 
         if other_args and "-" not in other_args[0][0]:

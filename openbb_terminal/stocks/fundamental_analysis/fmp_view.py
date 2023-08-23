@@ -29,7 +29,10 @@ logger = logging.getLogger(__name__)
 def valinvest_score(
     symbol: str, years: int, export: str = "", sheet_name: Optional[str] = None
 ):
-    """Value investing tool based on Warren Buffett, Joseph Piotroski and Benjamin Graham thoughts [Source: FMP]
+    """
+    Value investing tool based on Warren Buffett, Joseph Piotroski and Benjamin Graham thoughts [Source: FMP]
+    The data is gathered from fmp and the scores are calculated using the valinvest library. The repository
+    For this library can be found here: https://github.com/astro30/valinvest
 
     Parameters
     ----------
@@ -84,16 +87,18 @@ def display_profile(symbol: str, export: str = "", sheet_name: Optional[str] = N
     profile = fmp_model.get_profile(symbol)
 
     if not profile.empty:
+        console.print(f"\nImage: {profile.loc['image'][0]}")
+        console.print(f"\nDescription: {profile.loc['description'][0]}")
+
+        profile.drop(index=["description", "image"], inplace=True)
+        profile.columns = [" "]
+
         print_rich_table(
-            profile.drop(index=["description", "image"]),
-            headers=[""],
+            profile,
             title=f"{symbol.upper()} Profile",
             show_index=True,
             export=bool(export),
         )
-
-        console.print(f"\nImage: {profile.loc['image'][0]}")
-        console.print(f"\nDescription: {profile.loc['description'][0]}")
 
         export_data(
             export,
@@ -199,7 +204,7 @@ def display_enterprise(
             sheet_name,
         )
 
-        return fig.show(external=external_axes)
+        return fig.show(external=raw or external_axes)
 
 
 @log_start_end(log=logger)
@@ -241,7 +246,7 @@ def display_discounted_cash_flow(
             export,
             os.path.dirname(os.path.abspath(__file__)),
             "dcf",
-            dcf,
+            dcf.transpose(),
             sheet_name,
         )
 
@@ -301,7 +306,7 @@ def display_income_statement(
                     x=income_plot_data.index,
                     y=income_plot_data[plot[0]],
                     mode="lines",
-                    name=plot[0].replace("_", ""),
+                    name=f'{symbol.upper()} {plot[0].replace("_", "")}',
                 )
                 fig.set_title(title)
 
@@ -312,7 +317,7 @@ def display_income_statement(
                         x=income_plot_data.index,
                         y=income_plot_data[plot[i]],
                         mode="lines",
-                        name=plot[i].replace("_", ""),
+                        name=f'{symbol.upper()} {plot[i].replace("_", "")}',
                         row=i + 1,
                         col=1,
                     )
@@ -334,8 +339,6 @@ def display_income_statement(
                 show_index=True,
                 export=bool(export),
             )
-
-            pd.set_option("display.max_colwidth", None)
 
             console.print(income.loc["Final Link"].to_frame().to_string())
             console.print()
@@ -404,7 +407,7 @@ def display_balance_sheet(
                     x=balance_plot_data.index,
                     y=balance_plot_data[plot[0]],
                     mode="lines",
-                    name=plot[0].replace("_", " "),
+                    name=f'{symbol.upper()} {plot[0].replace("_", " ")}',
                 )
                 fig.set_title(
                     f"{plot[0].replace('_', ' ').lower()} {'QoQ' if quarterly else 'YoY'} Growth of {symbol.upper()}"
@@ -418,7 +421,7 @@ def display_balance_sheet(
                         x=balance_plot_data.index,
                         y=balance_plot_data[plot[i]],
                         mode="lines",
-                        name=plot[i].replace("_", " "),
+                        name=f'{symbol.upper()} {plot[i].replace("_", " ")}',
                         row=i + 1,
                         col=1,
                     )
@@ -438,8 +441,6 @@ def display_balance_sheet(
                 show_index=True,
                 export=bool(export),
             )
-
-            pd.set_option("display.max_colwidth", None)
 
             console.print(balance.loc["Final Link"].to_frame().to_string())
             console.print()
@@ -508,7 +509,7 @@ def display_cash_flow(
                     x=cash_plot_data.index,
                     y=cash_plot_data[plot[0]],
                     mode="lines",
-                    name=plot[0].replace("_", " "),
+                    name=f'{symbol.upper()} {plot[0].replace("_", " ")}',
                 )
                 fig.set_title(
                     f"{plot[0].replace('_', ' ').lower()} {'QoQ' if quarterly else 'YoY'} Growth of {symbol.upper()}"
@@ -522,7 +523,7 @@ def display_cash_flow(
                         x=cash_plot_data.index,
                         y=cash_plot_data[plot[i]],
                         mode="lines",
-                        name=plot[i].replace("_", " "),
+                        name=f'{symbol.upper()} {plot[i].replace("_", " ")}',
                         row=i + 1,
                         col=1,
                     )
@@ -542,8 +543,6 @@ def display_cash_flow(
                 show_index=True,
                 export=bool(export),
             )
-
-            pd.set_option("display.max_colwidth", None)
 
             console.print(cash.loc["Final Link"].to_frame().to_string())
             console.print()

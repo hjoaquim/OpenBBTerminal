@@ -32,7 +32,6 @@ TEST_SESSION = {
 
 CONFIGS = {
     "features_settings": {
-        "USE_WATERMARK": "False",
         "TIMEZONE": "Europe/London",
         "PLOT_DPI": "95",
         "PLOT_HEIGHT_PERCENTAGE": "50.5",
@@ -46,9 +45,27 @@ CONFIGS = {
 
 ROUTINES = {
     "items": [
-        {"name": "scrip1", "description": "abc"},
-        {"name": "script2", "description": "def"},
-        {"name": "script3", "description": "ghi"},
+        {
+            "name": "scrip1",
+            "description": "abc",
+            "version": "0.0.0",
+            "updated_date": "2021-01-01",
+            "uuid": "dad15f7d-4757-4fa6-a1e4-b9d150282ea0",
+        },
+        {
+            "name": "script2",
+            "description": "def",
+            "version": "0.0.1",
+            "updated_date": "2022-01-01",
+            "uuid": "4d87035e-33fa-4714-8b8f-9b699423595a",
+        },
+        {
+            "name": "script3",
+            "description": "ghi",
+            "version": "0.0.2",
+            "updated_date": "2023-01-01",
+            "uuid": "4d87035e-33fa-4714-8b8f-9b699423595b",
+        },
     ],
     "total": 3,
     "page": 1,
@@ -68,6 +85,15 @@ def vcr_config():
             ("apiKey", "MOCK_API_KEY"),
         ],
     }
+
+
+@pytest.fixture(autouse=True)
+def fetch_routines(mocker):
+    path_controller = "openbb_terminal.account.account_controller"
+    mocker.patch(
+        target=f"{path_controller}.AccountController.fetch_default_routines",
+        return_value=[],
+    )
 
 
 @pytest.fixture(name="test_user")
@@ -187,11 +213,12 @@ def test_menu_without_queue_sys_exit(mock_input, mocker):
 @pytest.mark.vcr(record_mode="none")
 @pytest.mark.record_stdout
 def test_print_help(mocker, test_user):
-    controller = account_controller.AccountController(queue=None)
+    path_controller = "openbb_terminal.account.account_controller"
     mocker.patch(
-        target="openbb_terminal.account.account_controller.get_current_user",
+        target=f"{path_controller}.get_current_user",
         return_value=test_user,
     )
+    controller = account_controller.AccountController(queue=None)
     controller.print_help()
 
 
@@ -377,7 +404,10 @@ def test_call_list(mocker, test_user):
     controller.call_list(other_args=["--page", "1", "--size", "10"])
 
     mock_list_routines.assert_called_once_with(
-        auth_header="Bearer 123", page=1, size=10
+        auth_header="Bearer 123",
+        page=1,
+        size=10,
+        base_url="https://payments.openbb.co/",
     )
 
 
@@ -406,6 +436,8 @@ def test_call_upload(mocker, test_user):
             "abc",
             "--name",
             "script1",
+            "--tags",
+            "stocks",
         ]
     )
 
@@ -415,12 +447,16 @@ def test_call_upload(mocker, test_user):
         name="script1",
         description="abc",
         routine="do something",
+        tags="stocks",
+        public=False,
+        base_url="https://payments.openbb.co/",
     )
 
 
 @pytest.mark.record_stdout
 def test_call_download(mocker, test_user):
     controller = account_controller.AccountController(queue=None)
+    controller.REMOTE_CHOICES = {"script1": "script1"}
     path_controller = "openbb_terminal.account.account_controller"
 
     mocker.patch(
@@ -447,20 +483,15 @@ def test_call_download(mocker, test_user):
         return_value="path_to_file",
     )
 
-    controller.call_download(
-        other_args=[
-            "--name",
-            "script1",
-        ]
-    )
+    controller.call_download(other_args=["--name", "script1"])
 
     mock_download_routine.assert_called_once_with(
         auth_header="Bearer 123",
-        name="script1",
+        uuid="script1",
+        base_url="https://payments.openbb.co/",
     )
     mock_save_routine.assert_called_once_with(
-        file_name="script1.openbb",
-        routine="do something",
+        file_name="script1.openbb", routine=["do something", "personal"]
     )
 
 
@@ -529,6 +560,7 @@ def test_call_generate(mocker, monkeypatch, test_user):
 
     mock_generate.assert_called_once_with(
         auth_header="Bearer 123",
+        base_url="https://payments.openbb.co/",
         days=30,
     )
 

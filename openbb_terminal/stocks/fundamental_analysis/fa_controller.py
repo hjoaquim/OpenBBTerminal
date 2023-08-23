@@ -31,9 +31,9 @@ from openbb_terminal.stocks.fundamental_analysis import (
     finnhub_view,
     finviz_view,
     fmp_view,
-    market_watch_view,
-    marketwatch_model,
     marketwatch_view,
+    nasdaq_model,
+    nasdaq_view,
     polygon_view,
     seeking_alpha_view,
     yahoo_finance_view,
@@ -92,7 +92,7 @@ class FundamentalAnalysisController(StockBaseController):
     PATH = "/stocks/fa/"
 
     SHRS_CHOICES = ["major", "institutional", "mutualfund"]
-    ESTIMATE_CHOICES = ["annualrevenue", "annualearnings", "quarterearnings"]
+    ESTIMATE_CHOICES = ["annual_earnings", "quarter_earnings", "quarter_revenues"]
     CHOICES_GENERATION = True
 
     def __init__(
@@ -129,41 +129,41 @@ class FundamentalAnalysisController(StockBaseController):
         mt.add_param("_ticker", self.ticker.upper())
         mt.add_raw("\n")
         mt.add_info("_company_overview")
-        mt.add_cmd("mktcap")
-        mt.add_cmd("overview")
-        mt.add_cmd("divs", not self.suffix)
-        mt.add_cmd("splits", not self.suffix)
-        mt.add_cmd("rating")
-        mt.add_cmd("rot")
-        mt.add_cmd("score")
-        mt.add_cmd("warnings")
+        mt.add_cmd("mktcap", not self.stock.empty)
+        mt.add_cmd("overview", not self.stock.empty)
+        mt.add_cmd("divs", not self.suffix and not self.stock.empty)
+        mt.add_cmd("splits", not self.suffix and not self.stock.empty)
+        mt.add_cmd("rating", not self.stock.empty)
+        mt.add_cmd("rot", not self.stock.empty)
+        mt.add_cmd("score", not self.stock.empty)
+        mt.add_cmd("warnings", not self.stock.empty)
         mt.add_raw("\n")
         mt.add_info("_management_shareholders")
-        mt.add_cmd("mgmt")
-        mt.add_cmd("shrs", not self.suffix)
-        mt.add_cmd("supplier")
-        mt.add_cmd("customer")
+        mt.add_cmd("mgmt", not self.stock.empty)
+        mt.add_cmd("shrs", not self.suffix and not self.stock.empty)
+        mt.add_cmd("supplier", not self.stock.empty)
+        mt.add_cmd("customer", not self.stock.empty)
         mt.add_raw("\n")
         mt.add_info("_financial_statements")
-        mt.add_cmd("income")
-        mt.add_cmd("balance")
-        mt.add_cmd("cash")
-        mt.add_cmd("growth")
-        mt.add_cmd("metrics")
-        mt.add_cmd("ratios")
-        mt.add_cmd("dupont")
-        mt.add_cmd("fraud")
-        mt.add_cmd("sec")
-        mt.add_cmd("analysis")
+        mt.add_cmd("income", not self.stock.empty)
+        mt.add_cmd("balance", not self.stock.empty)
+        mt.add_cmd("cash", not self.stock.empty)
+        mt.add_cmd("growth", not self.stock.empty)
+        mt.add_cmd("metrics", not self.stock.empty)
+        mt.add_cmd("ratios", not self.stock.empty)
+        mt.add_cmd("dupont", not self.stock.empty)
+        mt.add_cmd("fraud", not self.stock.empty)
+        mt.add_cmd("sec", not self.stock.empty)
+        mt.add_cmd("analysis", not self.stock.empty)
         mt.add_raw("\n")
         mt.add_info("_future_estimations")
-        mt.add_cmd("earnings")
-        mt.add_cmd("epsfc")
-        mt.add_cmd("revfc")
-        mt.add_cmd("est")
-        mt.add_cmd("pt")
-        mt.add_cmd("dcf")
-        mt.add_cmd("dcfc")
+        mt.add_cmd("earnings", not self.stock.empty)
+        mt.add_cmd("epsfc", not self.stock.empty)
+        mt.add_cmd("revfc", not self.stock.empty)
+        mt.add_cmd("est", not self.stock.empty)
+        mt.add_cmd("pt", not self.stock.empty)
+        mt.add_cmd("dcf", not self.stock.empty)
+        mt.add_cmd("dcfc", not self.stock.empty)
         console.print(text=mt.menu_text, menu="Stocks - Fundamental Analysis")
 
     def custom_reset(self):
@@ -223,8 +223,8 @@ class FundamentalAnalysisController(StockBaseController):
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
             prog="mgmt",
             description="""
-                Print management team. Namely: Name, Title, Information from google and
-                (potentially) Insider Activity page. [Source: Business Insider]
+                Print management team. Namely: Name, Title, and Information from google
+                [Source: Business Insider]
             """,
         )
         parser.add_argument(
@@ -325,8 +325,9 @@ class FundamentalAnalysisController(StockBaseController):
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
             prog="score",
             description="""
-                Value investing tool based on Warren Buffett, Joseph Piotroski
-                and Benjamin Graham thoughts [Source: FMP]
+                Value investing based on Warren Buffett, Joseph Piotroski and Benjamin Graham thoughts [Source: FMP].
+                Data is gathered from fmp and the scores are calculated using the valinvest library. The repository
+                For this library can be found here: https://github.com/astro30/valinvest
                 """,
         )
         parser.add_argument(
@@ -1625,9 +1626,7 @@ class FundamentalAnalysisController(StockBaseController):
             default=False,
             help="Whether to replace a linear regression estimate with a growth estimate.",
         )
-        ns_parser = self.parse_known_args_and_warn(
-            parser, other_args, EXPORT_ONLY_RAW_DATA_ALLOWED
-        )
+        ns_parser = self.parse_known_args_and_warn(parser, other_args)
 
         if ns_parser:
             if ns_parser.ticker:
@@ -1638,15 +1637,23 @@ class FundamentalAnalysisController(StockBaseController):
                 return
 
             if self.ticker:
-                dcf = dcf_view.CreateExcelFA(
-                    symbol=self.ticker,
-                    beta=ns_parser.beta,
-                    audit=ns_parser.audit,
-                    ratios=ns_parser.ratios,
-                    len_pred=ns_parser.prediction,
-                    max_similars=ns_parser.similar,
-                    growth=ns_parser.growth,
-                )
+                try:
+                    dcf = dcf_view.CreateExcelFA(
+                        symbol=self.ticker,
+                        beta=ns_parser.beta,
+                        audit=ns_parser.audit,
+                        ratios=ns_parser.ratios,
+                        len_pred=ns_parser.prediction,
+                        max_similars=ns_parser.similar,
+                        growth=ns_parser.growth,
+                    )
+                except Exception as e:
+                    logger.exception(e)
+                    console.print(
+                        "[red]Could not properly create the DCF, please make sure you are"
+                        " using a valid, US listed ticker.[/red]"
+                    )
+                    return
                 if dcf and dcf.data:
                     dcf.create_workbook()
             else:
@@ -1749,7 +1756,7 @@ class FundamentalAnalysisController(StockBaseController):
                 self.ticker = ns_parser.ticker
                 self.custom_load_wrapper([self.ticker])
 
-            market_watch_view.display_sean_seah_warnings(
+            marketwatch_view.display_sean_seah_warnings(
                 symbol=self.ticker, debug=ns_parser.b_debug
             )
 
@@ -1850,7 +1857,7 @@ class FundamentalAnalysisController(StockBaseController):
             help="Estimates to get",
             dest="estimate",
             choices=self.ESTIMATE_CHOICES,
-            default="annualearnings",
+            default="annual_earnings",
         )
         ns_parser = self.parse_known_args_and_warn(
             parser, other_args, EXPORT_ONLY_RAW_DATA_ALLOWED
@@ -2036,7 +2043,7 @@ class FundamentalAnalysisController(StockBaseController):
             dest="form",
             type=str,
             help="form group of SEC filings.",
-            choices=marketwatch_model.FORM_GROUP.keys(),
+            choices=nasdaq_model.FORM_GROUP.keys(),
         )
 
         if other_args and "-" not in other_args[0][0]:
@@ -2053,7 +2060,7 @@ class FundamentalAnalysisController(StockBaseController):
                 console.print(no_ticker_message)
                 return
 
-            marketwatch_view.sec_filings(
+            nasdaq_view.sec_filings(
                 symbol=ns_parser.ticker,
                 limit=ns_parser.limit,
                 export=ns_parser.export,

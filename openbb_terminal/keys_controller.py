@@ -7,17 +7,10 @@ import argparse
 import logging
 from typing import Callable, Dict, List, Optional
 
-from openbb_terminal import (
-    keys_model,
-    keys_view,
-)
-from openbb_terminal.core.config.paths import (
-    PACKAGE_ENV_FILE,
-    REPOSITORY_ENV_FILE,
-    SETTINGS_ENV_FILE,
-)
-from openbb_terminal.core.session.constants import KEYS_URL
+from openbb_terminal import keys_model, keys_view
+from openbb_terminal.core.session.constants import BackendEnvironment
 from openbb_terminal.core.session.current_user import get_current_user, is_local
+from openbb_terminal.core.session.env_handler import get_reading_order
 from openbb_terminal.custom_prompt_toolkit import NestedCompleter
 from openbb_terminal.decorators import log_start_end
 from openbb_terminal.helper_funcs import EXPORT_ONLY_RAW_DATA_ALLOWED
@@ -72,15 +65,29 @@ class KeysController(BaseController):  # pylint: disable=too-many-public-methods
                         keys_model.KeyStatus.DEFINED_TEST_INCONCLUSIVE
                     )
 
-    def print_help(self, update_status: bool = False, reevaluate: bool = False):
+    def get_source_hierarchy(self) -> str:
+        """Hierarchy is equivalent to reverse order of reading .env files.
+
+        Returns
+        -------
+        str
+            Source priority string.
+        """
+        reading_order = get_reading_order()
+        hierarchy = "\n        ".join(list(map(str, reversed(reading_order))))
+        return (
+            hierarchy
+            if is_local()
+            else f"{BackendEnvironment.HUB_URL + 'app/terminal/api-keys'}\n        {hierarchy}"
+        )
+
+    def print_help(self, update_status: bool = True, reevaluate: bool = True):
         """Print help"""
         self.check_keys_status(reevaluate=reevaluate)
         mt = MenuText("keys/")
         mt.add_param(
             "_source",
-            f"{SETTINGS_ENV_FILE}\n        {PACKAGE_ENV_FILE}\n        {REPOSITORY_ENV_FILE}"
-            if is_local()
-            else KEYS_URL,
+            self.get_source_hierarchy(),
         )
         mt.add_raw("\n")
         mt.add_info("_keys_")
@@ -391,6 +398,34 @@ class KeysController(BaseController):  # pylint: disable=too-many-public-methods
             )
 
     @log_start_end(log=logger)
+    def call_biztoc(self, other_args: List[str]):
+        """Process BizToc API command"""
+        parser = argparse.ArgumentParser(
+            add_help=False,
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+            prog="news",
+            description="Set BizToc API key.",
+        )
+        parser.add_argument(
+            "-k",
+            "--key",
+            type=str,
+            dest="key",
+            help="key",
+        )
+        if not other_args:
+            console.print("For your API Key, visit: https://api.biztoc.com")
+            return
+
+        if other_args and "-" not in other_args[0][0]:
+            other_args.insert(0, "-k")
+        ns_parser = self.parse_simple_args(parser, other_args)
+        if ns_parser:
+            self.status_dict["biztoc"] = keys_model.set_biztoc_key(
+                key=ns_parser.key, persist=True, show_output=True
+            )
+
+    @log_start_end(log=logger)
     def call_tradier(self, other_args: List[str]):
         """Process Tradier API command"""
         parser = argparse.ArgumentParser(
@@ -487,7 +522,7 @@ class KeysController(BaseController):  # pylint: disable=too-many-public-methods
             type=str,
             dest="client_id",
             help="Client ID",
-            required="-h" not in other_args,
+            required="-h" not in other_args and "--help" not in other_args,
         )
         parser.add_argument(
             "-s",
@@ -495,7 +530,7 @@ class KeysController(BaseController):  # pylint: disable=too-many-public-methods
             type=str,
             dest="client_secret",
             help="Client Secret",
-            required="-h" not in other_args,
+            required="-h" not in other_args and "--help" not in other_args,
         )
         parser.add_argument(
             "-u",
@@ -503,7 +538,7 @@ class KeysController(BaseController):  # pylint: disable=too-many-public-methods
             type=str,
             dest="username",
             help="Username",
-            required="-h" not in other_args,
+            required="-h" not in other_args and "--help" not in other_args,
         )
         parser.add_argument(
             "-p",
@@ -511,7 +546,7 @@ class KeysController(BaseController):  # pylint: disable=too-many-public-methods
             type=str,
             dest="password",
             help="Password",
-            required="-h" not in other_args,
+            required="-h" not in other_args and "--help" not in other_args,
         )
         parser.add_argument(
             "-a",
@@ -519,7 +554,7 @@ class KeysController(BaseController):  # pylint: disable=too-many-public-methods
             type=str,
             dest="user_agent",
             help="User agent",
-            required="-h" not in other_args,
+            required="-h" not in other_args and "--help" not in other_args,
             nargs="+",
         )
         if not other_args:
@@ -538,52 +573,6 @@ class KeysController(BaseController):  # pylint: disable=too-many-public-methods
                 password=ns_parser.password,
                 username=ns_parser.username,
                 useragent=useragent,
-                persist=True,
-                show_output=True,
-            )
-
-    @log_start_end(log=logger)
-    def call_twitter(self, other_args: List[str]):
-        """Process twitter command"""
-        parser = argparse.ArgumentParser(
-            add_help=False,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-            prog="twitter",
-            description="Set Twitter API key.",
-        )
-        parser.add_argument(
-            "-k",
-            "--key",
-            type=str,
-            dest="key",
-            help="Key",
-            required="-h" not in other_args,
-        )
-        parser.add_argument(
-            "-s",
-            "--secret",
-            type=str,
-            dest="secret",
-            help="Secret key",
-            required="-h" not in other_args,
-        )
-        parser.add_argument(
-            "-t",
-            "--token",
-            type=str,
-            dest="token",
-            help="Bearer token",
-            required="-h" not in other_args,
-        )
-        if not other_args:
-            console.print("For your API Key, visit: https://developer.twitter.com")
-            return
-        ns_parser = self.parse_simple_args(parser, other_args)
-        if ns_parser:
-            self.status_dict["twitter"] = keys_model.set_twitter_key(
-                key=ns_parser.key,
-                secret=ns_parser.secret,
-                access_token=ns_parser.token,
                 persist=True,
                 show_output=True,
             )
@@ -638,7 +627,7 @@ class KeysController(BaseController):  # pylint: disable=too-many-public-methods
             type=str,
             dest="username",
             help="username",
-            required="-h" not in other_args,
+            required="-h" not in other_args and "--help" not in other_args,
         )
         parser.add_argument(
             "-p",
@@ -646,7 +635,7 @@ class KeysController(BaseController):  # pylint: disable=too-many-public-methods
             type=str,
             dest="password",
             help="password",
-            required="-h" not in other_args,
+            required="-h" not in other_args and "--help" not in other_args,
         )
         parser.add_argument(
             "-s",
@@ -727,7 +716,7 @@ class KeysController(BaseController):  # pylint: disable=too-many-public-methods
             type=str,
             dest="key",
             help="Key",
-            required="-h" not in other_args,
+            required="-h" not in other_args and "--help" not in other_args,
         )
         parser.add_argument(
             "-s",
@@ -735,7 +724,7 @@ class KeysController(BaseController):  # pylint: disable=too-many-public-methods
             type=str,
             dest="secret",
             help="Secret key",
-            required="-h" not in other_args,
+            required="-h" not in other_args and "--help" not in other_args,
         )
         if not other_args:
             console.print("For your API Key, visit: https://binance.com")
@@ -791,7 +780,7 @@ class KeysController(BaseController):  # pylint: disable=too-many-public-methods
             type=str,
             dest="key",
             help="Key",
-            required="-h" not in other_args,
+            required="-h" not in other_args and "--help" not in other_args,
         )
         parser.add_argument(
             "-s",
@@ -799,7 +788,7 @@ class KeysController(BaseController):  # pylint: disable=too-many-public-methods
             type=str,
             dest="secret",
             help="Secret key",
-            required="-h" not in other_args,
+            required="-h" not in other_args and "--help" not in other_args,
         )
         parser.add_argument(
             "-p",
@@ -807,7 +796,7 @@ class KeysController(BaseController):  # pylint: disable=too-many-public-methods
             type=str,
             dest="passphrase",
             help="Passphrase",
-            required="-h" not in other_args,
+            required="-h" not in other_args and "--help" not in other_args,
         )
         if not other_args:
             console.print("For your API Key, visit: https://docs.pro.coinbase.com/")
@@ -980,7 +969,7 @@ class KeysController(BaseController):  # pylint: disable=too-many-public-methods
             type=str,
             dest="key",
             help="Key",
-            required="-h" not in other_args,
+            required="-h" not in other_args and "--help" not in other_args,
         )
         parser.add_argument(
             "-t",
@@ -988,7 +977,7 @@ class KeysController(BaseController):  # pylint: disable=too-many-public-methods
             type=str,
             dest="token",
             help="Token",
-            required="-h" not in other_args,
+            required="-h" not in other_args and "--help" not in other_args,
         )
         if not other_args:
             console.print("For your API Key, visit: https://www.smartstake.io")
@@ -1121,36 +1110,6 @@ class KeysController(BaseController):  # pylint: disable=too-many-public-methods
             )
 
     @log_start_end(log=logger)
-    def call_shroom(self, other_args: List[str]):
-        """Process shroom command"""
-        parser = argparse.ArgumentParser(
-            add_help=False,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-            prog="shroom",
-            description="Set Shroom API key.",
-        )
-        parser.add_argument(
-            "-k",
-            "--key",
-            type=str,
-            dest="key",
-            help="key",
-        )
-        if not other_args:
-            console.print(
-                "For your API Key, visit: https://sdk.flipsidecrypto.xyz/shroomdk"
-            )
-            return
-
-        if other_args and "-" not in other_args[0][0]:
-            other_args.insert(0, "-k")
-        ns_parser = self.parse_simple_args(parser, other_args)
-        if ns_parser:
-            self.status_dict["shroom"] = keys_model.set_shroom_key(
-                key=ns_parser.key, persist=True, show_output=True
-            )
-
-    @log_start_end(log=logger)
     def call_tokenterminal(self, other_args: List[str]):
         """Process tokenterminal command"""
         parser = argparse.ArgumentParser(
@@ -1237,6 +1196,36 @@ class KeysController(BaseController):  # pylint: disable=too-many-public-methods
             )
 
     @log_start_end(log=logger)
+    def call_openai(self, other_args: List[str]):
+        """Process openai command"""
+        parser = argparse.ArgumentParser(
+            add_help=False,
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+            prog="openai",
+            description="Set OpenAI API key.",
+        )
+        parser.add_argument(
+            "-k",
+            "--key",
+            type=str,
+            dest="key",
+            help="key",
+        )
+        if not other_args:
+            console.print("For your API Key, https://openai.com")
+            return
+
+        if other_args and "-" not in other_args[0][0]:
+            other_args.insert(0, "-k")
+
+        ns_parser = self.parse_simple_args(parser, other_args)
+
+        if ns_parser:
+            self.status_dict["openai"] = keys_model.set_openai_key(
+                key=ns_parser.key, persist=True, show_output=True
+            )
+
+    @log_start_end(log=logger)
     def call_ultima(self, other_args: List[str]):
         """Process ultima command"""
         parser = argparse.ArgumentParser(
@@ -1261,5 +1250,33 @@ class KeysController(BaseController):  # pylint: disable=too-many-public-methods
         ns_parser = self.parse_simple_args(parser, other_args)
         if ns_parser:
             self.status_dict["ultima"] = keys_model.set_ultima_key(
+                key=ns_parser.key, persist=True, show_output=True
+            )
+
+    @log_start_end(log=logger)
+    def call_dappradar(self, other_args: List[str]):
+        """Process dappradar command"""
+        parser = argparse.ArgumentParser(
+            add_help=False,
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+            prog="dappradar",
+            description="Set DappRadar API key.",
+        )
+        parser.add_argument(
+            "-k",
+            "--key",
+            type=str,
+            dest="key",
+            help="key",
+        )
+        if not other_args:
+            console.print("For your API Key, visit: https://dappradar.com/api")
+            return
+
+        if other_args and "-" not in other_args[0][0]:
+            other_args.insert(0, "-k")
+        ns_parser = self.parse_simple_args(parser, other_args)
+        if ns_parser:
+            self.status_dict["dappradar"] = keys_model.set_dappradar_key(
                 key=ns_parser.key, persist=True, show_output=True
             )

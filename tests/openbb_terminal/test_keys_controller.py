@@ -48,7 +48,6 @@ class MockCFG:
         self.API_TRADIER_TOKEN = kwargs.get("TRADIER", None)
         self.API_CMC_KEY = kwargs.get("CMC", None)
         self.API_FINNHUB_KEY = kwargs.get("FINNHUB", None)
-        self.API_IEX_TOKEN = kwargs.get("IEX", None)
         self.API_REDDIT_CLIENT_ID = kwargs.get("REDDIT_CLIENT", None)
         self.API_REDDIT_CLIENT_SECRET = kwargs.get("REDDIT_SECRET", None)
         self.API_REDDIT_USERNAME = kwargs.get("REDDIT_USERNAME", None)
@@ -65,7 +64,6 @@ class MockCFG:
         self.API_BINANCE_KEY = kwargs.get("BINANCE", None)
         self.API_BINANCE_SECRET = kwargs.get("BINANCE", None)
         self.API_BITQUERY_KEY = kwargs.get("BITQUERY", None)
-        self.API_SENTIMENTINVESTOR_TOKEN = kwargs.get("SI", None)
         self.API_COINBASE_KEY = kwargs.get("COINBASE", None)
         self.API_COINBASE_SECRET = kwargs.get("COINBASE", None)
         self.API_COINBASE_PASS_PHRASE = kwargs.get("COINBASE", None)
@@ -79,7 +77,6 @@ class MockCFG:
         self.API_MESSARI_KEY = kwargs.get("MESSARI", None)
         self.API_SANTIMENT_KEY = kwargs.get("SANTIMENT", None)
         self.API_TOKENTERMINAL_KEY = kwargs.get("TOKENTERMINAL", None)
-        self.API_SHROOM_KEY = kwargs.get("SHROOM", None)
 
 
 @pytest.mark.skip
@@ -148,12 +145,6 @@ def test_call_finnhub(other):
 )
 def test_call_reddit(other):
     controller.call_reddit(other)
-
-
-@pytest.mark.vcr
-@pytest.mark.parametrize("other", [[], ["-k", "1234", "-s", "4567", "-t", "890"]])
-def test_call_twitter(other):
-    controller.call_twitter(other)
 
 
 @pytest.mark.vcr
@@ -250,9 +241,3 @@ def test_call_messari(other):
 @pytest.mark.parametrize("other", [[], ["-k", "1234", "-t", "456"]])
 def test_call_tokenterminal(other):
     controller.call_tokenterminal(other)
-
-
-@pytest.mark.vcr
-@pytest.mark.parametrize("other", [[], ["-k", "1234", "-t", "456"]])
-def test_call_shroom(other):
-    controller.call_shroom(other)

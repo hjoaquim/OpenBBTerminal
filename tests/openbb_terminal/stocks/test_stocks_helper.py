@@ -30,7 +30,17 @@ def vcr_config():
 
 @pytest.mark.vcr
 def test_quote():
-    stocks_view.display_quote("GME")
+    stocks_view.display_quote(["GME"])
+
+
+@pytest.mark.vcr
+def test_multi_quote() -> None:
+    stocks_view.display_quote(["AAPL", "MSFT", "AMZN", "TSLA", "BTCUSD"])
+
+
+@pytest.mark.vcr
+def test_quote_bad_ticker() -> None:
+    stocks_view.display_quote(["F", "GM", "RIVN", "VW", "69420"])
 
 
 @pytest.mark.default_cassette("test_search")
@@ -47,15 +57,18 @@ def test_search(mocker, use_tab):
         target="openbb_terminal.core.session.current_user.__current_user",
         new=mock_current_user,
     )
-    stocks_helper.search(
+    df = stocks_helper.search(
         query="microsoft",
         country="United_States",
         sector="",
         industry="",
         industry_group="",
+        exchange="",
         exchange_country="",
         all_exchanges=False,
-        limit=5,
+    )
+    stocks_helper.print_rich_table(
+        df, show_index=False, title="Company Search Results", headers=df.columns
     )
 
 

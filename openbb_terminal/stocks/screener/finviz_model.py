@@ -108,6 +108,7 @@ def get_screener_data(
     pd.DataFrame
         Dataframe with loaded filtered stocks
     """
+    df_screen = pd.DataFrame()
     if data_type == "overview":
         screen = overview.Overview()
     elif data_type == "valuation":
@@ -187,6 +188,23 @@ def get_screener_data(
                 df_screen = screen.screener_view(limit=limit, ascend=ascend)
             else:
                 df_screen = screen.screener_view(ascend=ascend)
+
+    df_screen.columns = [val.strip("\n") for val in df_screen.columns]
+    if "Company" in df_screen.columns:
+        df_screen["Company"] = df_screen["Company"].str.replace(",", "")
+    if data_type == "performance":
+        df_screen = df_screen.rename(
+            columns={
+                "Perf Week": "1W",
+                "Perf Month": "1M",
+                "Perf Quart": "3M",
+                "Perf Half": "6M",
+                "Perf Year": "1Y",
+                "Perf YTD": "YTD",
+                "Volatility W": "1W Volatility",
+                "Volatility M": "1M Volatility",
+            }
+        )
 
     return df_screen
 

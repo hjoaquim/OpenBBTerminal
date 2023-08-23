@@ -13,7 +13,7 @@ class CryptoRoot(Category):
         `chart`: Load data for Technical Analysis\n
         `find`: Find similar coin by coin name,symbol or id.\n
         `load`: Load crypto currency to get data for\n
-        `price`: Returns price and confidence interval from pyth live feed. [Source: Pyth]\n
+        `price`: Displays live price from pyth live feed [Source: https://pyth.network/]\n
     """
 
     _location_path = "crypto"
@@ -24,7 +24,7 @@ class CryptoRoot(Category):
         self.chart = lib.crypto_helpers.plot_chart
         self.find = lib.crypto_models.find
         self.load = lib.crypto_helpers.load
-        self.price = lib.crypto_pyth_model.get_price
+        self.price = lib.crypto_pyth_view.display_price
 
 
 class CryptoDueDiligence(Category):
@@ -285,10 +285,6 @@ class CryptoDeFi(Category):
         )
         self.newsletters = lib.crypto_defi_substack_model.get_newsletters
         self.newsletters_chart = lib.crypto_defi_substack_view.display_newsletters
-        self.pairs = lib.crypto_defi_graph_model.get_uniswap_pool_recently_added
-        self.pairs_chart = lib.crypto_defi_graph_view.display_recently_added
-        self.pools = lib.crypto_defi_graph_model.get_uni_pools_by_volume
-        self.pools_chart = lib.crypto_defi_graph_view.display_uni_pools
         self.sinfo = lib.crypto_defi_terramoney_fcd_model.get_staking_account_info
         self.sinfo_chart = (
             lib.crypto_defi_terramoney_fcd_view.display_account_staking_info
@@ -301,14 +297,8 @@ class CryptoDeFi(Category):
         self.sreturn_chart = (
             lib.crypto_defi_terramoney_fcd_view.display_staking_returns_history
         )
-        self.stats = lib.crypto_defi_graph_model.get_uniswap_stats
-        self.stats_chart = lib.crypto_defi_graph_view.display_uni_stats
         self.stvl = lib.crypto_defi_llama_model.get_defi_tvl
         self.stvl_chart = lib.crypto_defi_llama_view.display_defi_tvl
-        self.swaps = lib.crypto_defi_graph_model.get_last_uni_swaps
-        self.swaps_chart = lib.crypto_defi_graph_view.display_last_uni_swaps
-        self.tokens = lib.crypto_defi_graph_model.get_uni_tokens
-        self.tokens_chart = lib.crypto_defi_graph_view.display_uni_tokens
         self.validators = lib.crypto_defi_terramoney_fcd_model.get_validators
         self.validators_chart = lib.crypto_defi_terramoney_fcd_view.display_validators
         self.vaults = lib.crypto_defi_coindix_model.get_defi_vaults
@@ -326,19 +316,29 @@ class CryptoDiscovery(Category):
         `coins_for_given_exchange`: Helper method to get all coins available on binance exchange [Source: CoinGecko]\n
         `cpsearch`: Search CoinPaprika. [Source: CoinPaprika]\n
         `cpsearch_chart`: Prints table showing Search over CoinPaprika. [Source: CoinPaprika]\n
+        `dapp_categories`: Get dapp categories [Source: https://dappradar.com/]\n
+        `dapp_categories_chart`: Prints table showing dapp categories [Source: https://dappradar.com/]\n
+        `dapp_chains`: Get dapp chains [Source: https://dappradar.com/]\n
+        `dapp_chains_chart`: Prints table showing dapp chains [Source: https://dappradar.com/]\n
+        `dapp_metrics`: Get dapp metrics [Source: https://dappradar.com/]\n
+        `dapp_metrics_chart`: Prints table showing dapp metrics [Source: https://dappradar.com/]\n
+        `dapps`: Get dapps [Source: https://dappradar.com/]\n
+        `dapps_chart`: Prints table showing dapps [Source: https://dappradar.com/]\n
+        `defi_chains`: Get defi chains [Source: https://dappradar.com/]\n
+        `defi_chains_chart`: Prints table showing defi chains [Source: https://dappradar.com/]\n
+        `fees`: Show cryptos with most fees. [Source: CryptoStats]\n
+        `fees_chart`: Display crypto with most fees paid [Source: CryptoStats]\n
         `gainers`: Shows Largest Gainers - coins which gain the most in given period. [Source: CoinGecko]\n
         `gainers_chart`: Prints table showing Largest Gainers - coins which gain the most in given period. [Source: CoinGecko]\n
         `losers`: Shows Largest Losers - coins which lose the most in given period. [Source: CoinGecko]\n
         `losers_chart`: Prints table showing Largest Losers - coins which lost the most in given period of time. [Source: CoinGecko]\n
+        `nft_mktp`: Get top nft collections [Source: https://dappradar.com/]\n
+        `nft_mktp_chart`: Prints table showing nft marketplaces [Source: https://dappradar.com/]\n
+        `nft_mktp_chains`: Get nft marketplaces chains [Source: https://dappradar.com/]\n
+        `nft_mktp_chains_chart`: Prints table showing nft marketplaces chains [Source: https://dappradar.com/]\n
+        `tokens`: Get chains that support tokens [Source: https://dappradar.com/]\n
+        `tokens_chart`: Prints table showing chains that support tokens [Source: https://dappradar.com/]\n
         `top_coins`: Get top cryptp coins.\n
-        `top_dapps`: Get top decentralized applications by daily volume and users [Source: https://dappradar.com/]\n
-        `top_dapps_chart`: Prints table showing top decentralized exchanges [Source: https://dappradar.com/]\n
-        `top_dexes`: Get top dexes by daily volume and users [Source: https://dappradar.com/]\n
-        `top_dexes_chart`: Prints table showing top decentralized exchanges [Source: https://dappradar.com/]\n
-        `top_games`: Get top blockchain games by daily volume and users [Source: https://dappradar.com/]\n
-        `top_games_chart`: Prints table showing top blockchain games [Source: https://dappradar.com/]\n
-        `top_nfts`: Get top nft collections [Source: https://dappradar.com/]\n
-        `top_nfts_chart`: Prints table showing top nft collections [Source: https://dappradar.com/]\n
         `trending`: Returns trending coins [Source: CoinGecko]\n
         `trending_chart`: Prints table showing trending coins [Source: CoinGecko]\n
     """
@@ -356,19 +356,35 @@ class CryptoDiscovery(Category):
         )
         self.cpsearch = lib.crypto_disc_coinpaprika_model.get_search_results
         self.cpsearch_chart = lib.crypto_disc_coinpaprika_view.display_search_results
+        self.dapp_categories = lib.crypto_disc_dappradar_model.get_dapp_categories
+        self.dapp_categories_chart = (
+            lib.crypto_disc_dappradar_view.display_dapp_categories
+        )
+        self.dapp_chains = lib.crypto_disc_dappradar_model.get_dapp_chains
+        self.dapp_chains_chart = lib.crypto_disc_dappradar_view.display_dapp_chains
+        self.dapp_metrics = lib.crypto_disc_dappradar_model.get_dapp_metrics
+        self.dapp_metrics_chart = lib.crypto_disc_dappradar_view.display_dapp_metrics
+        self.dapps = lib.crypto_disc_dappradar_model.get_dapps
+        self.dapps_chart = lib.crypto_disc_dappradar_view.display_dapps
+        self.defi_chains = lib.crypto_disc_dappradar_model.get_defi_chains
+        self.defi_chains_chart = lib.crypto_disc_dappradar_view.display_defi_chains
+        self.fees = lib.crypto_disc_cryptostats_model.get_fees
+        self.fees_chart = lib.crypto_disc_cryptostats_view.display_fees
         self.gainers = lib.crypto_disc_pycoingecko_model.get_gainers
         self.gainers_chart = lib.crypto_disc_pycoingecko_view.display_gainers
         self.losers = lib.crypto_disc_pycoingecko_model.get_losers
         self.losers_chart = lib.crypto_disc_pycoingecko_view.display_losers
+        self.nft_mktp = lib.crypto_disc_dappradar_model.get_nft_marketplaces
+        self.nft_mktp_chart = lib.crypto_disc_dappradar_view.display_nft_marketplaces
+        self.nft_mktp_chains = (
+            lib.crypto_disc_dappradar_model.get_nft_marketplace_chains
+        )
+        self.nft_mktp_chains_chart = (
+            lib.crypto_disc_dappradar_view.display_nft_marketplace_chains
+        )
+        self.tokens = lib.crypto_disc_dappradar_model.get_token_chains
+        self.tokens_chart = lib.crypto_disc_dappradar_view.display_token_chains
         self.top_coins = lib.crypto_disc_sdk_helpers.top_coins
-        self.top_dapps = lib.crypto_disc_dappradar_model.get_top_dapps
-        self.top_dapps_chart = lib.crypto_disc_dappradar_view.display_top_dapps
-        self.top_dexes = lib.crypto_disc_dappradar_model.get_top_dexes
-        self.top_dexes_chart = lib.crypto_disc_dappradar_view.display_top_dexes
-        self.top_games = lib.crypto_disc_dappradar_model.get_top_games
-        self.top_games_chart = lib.crypto_disc_dappradar_view.display_top_games
-        self.top_nfts = lib.crypto_disc_dappradar_model.get_top_nfts
-        self.top_nfts_chart = lib.crypto_disc_dappradar_view.display_top_nfts
         self.trending = lib.crypto_disc_pycoingecko_model.get_trending_coins
         self.trending_chart = lib.crypto_disc_pycoingecko_view.display_trending
 
@@ -429,12 +445,15 @@ class CryptoOnChain(Category):
         `lt_chart`: Prints table showing Trades on Decentralized Exchanges aggregated by DEX or Month\n
         `prices`: Get token historical prices with volume and market cap, and average price. [Source: Ethplorer]\n
         `prices_chart`: Display token historical prices with volume and market cap, and average price.\n
+        `query`: Get query data\n
         `query_graph`: Helper methods for querying graphql api. [Source: https://bitquery.io/]\n
         `th`: Get info about token historical transactions. [Source: Ethplorer]\n
         `th_chart`: Display info about token history. [Source: Ethplorer]\n
         `token_decimals`: Helper methods that gets token decimals number. [Source: Ethplorer]\n
         `top`: Get top 50 tokens. [Source: Ethplorer]\n
         `top_chart`: Display top ERC20 tokens [Source: Ethplorer]\n
+        `topledger`: Returns Topledger's Data for the given Organization's Slug[org_slug] based\n
+        `topledger_chart`: Display on-chain data from Topledger. [Source: Topledger]\n
         `ttcp`: Get most traded crypto pairs on given decentralized exchange in chosen time period.\n
         `ttcp_chart`: Prints table showing most traded crypto pairs on given decentralized exchange in chosen time period.\n
         `tv`: Get token volume on different Decentralized Exchanges. [Source: https://graphql.bitquery.io/]\n
@@ -503,6 +522,8 @@ class CryptoOnChain(Category):
         self.token_decimals = lib.crypto_onchain_ethplorer_model.get_token_decimals
         self.top = lib.crypto_onchain_ethplorer_model.get_top_tokens
         self.top_chart = lib.crypto_onchain_ethplorer_view.display_top_tokens
+        self.topledger = lib.crypto_onchain_topledger_model.get_topledger_data
+        self.topledger_chart = lib.crypto_onchain_topledger_view.display_topledger_data
         self.ttcp = lib.crypto_onchain_bitquery_model.get_most_traded_pairs
         self.ttcp_chart = lib.crypto_onchain_bitquery_view.display_most_traded_pairs
         self.tv = lib.crypto_onchain_bitquery_model.get_token_volume_on_dexes
